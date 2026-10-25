@@ -1,0 +1,1724 @@
+{
+  "random_state": 42,
+  "features": [
+    "age",
+    "female",
+    "urban",
+    "female_x_urban",
+    "bform",
+    "any_disability",
+    "assets_n",
+    "digital_n",
+    "house",
+    "province_Sindh",
+    "province_Khyber Pakhtuknkhwa",
+    "province_Balochistan",
+    "province_Islamabad Capital Territory"
+  ],
+  "target": "out_of_school",
+  "split": [
+    {
+      "partition": "train",
+      "rows": 129287,
+      "share_of_rows": 0.799,
+      "positives": 17220,
+      "prevalence": 0.1332,
+      "districts": 109
+    },
+    {
+      "partition": "test",
+      "rows": 32516,
+      "share_of_rows": 0.201,
+      "positives": 4068,
+      "prevalence": 0.1251,
+      "districts": 29
+    }
+  ],
+  "dataset": {
+    "rows": 161803,
+    "positives": 21288,
+    "prevalence": 0.1315673998627961,
+    "weighted_prevalence": 0.09321971247974964,
+    "districts": 138
+  },
+  "cv_best": [
+    {
+      "model": "logreg",
+      "best_params": "{\"C\": 0.001, \"class_weight\": \"balanced\"}",
+      "cv_roc_auc_mean": 0.735717835635614,
+      "cv_roc_auc_sd": 0.04654184949100679,
+      "cv_average_precision_mean": 0.265668561110194,
+      "cv_average_precision_sd": 0.04833831860553819,
+      "cv_recall_mean": 0.7019413858502147,
+      "cv_recall_sd": 0.1058287387289407,
+      "cv_precision_mean": 0.24787545320409193,
+      "cv_precision_sd": 0.05480791754273567,
+      "cv_f1_mean": 0.36579630820998743,
+      "cv_f1_sd": 0.0725666969211581,
+      "cv_accuracy_mean": 0.6750079565523892,
+      "cv_accuracy_sd": 0.03361546856960659,
+      "cv_balanced_accuracy_mean": 0.6858637235680478,
+      "cv_balanced_accuracy_sd": 0.05548206208043537
+    },
+    {
+      "model": "tree",
+      "best_params": "{\"class_weight\": null, \"max_depth\": 10, \"min_samples_leaf\": 200}",
+      "cv_roc_auc_mean": 0.743928273756844,
+      "cv_roc_auc_sd": 0.05107835104440948,
+      "cv_average_precision_mean": 0.29208532909218077,
+      "cv_average_precision_sd": 0.09820479925540929,
+      "cv_recall_mean": 0.06774335708070053,
+      "cv_recall_sd": 0.02892957776900184,
+      "cv_precision_mean": 0.3775311140654199,
+      "cv_precision_sd": 0.18854246588000023,
+      "cv_f1_mean": 0.11223285596081212,
+      "cv_f1_sd": 0.0429736583085328,
+      "cv_accuracy_mean": 0.8593412140161656,
+      "cv_accuracy_sd": 0.006591708206046711,
+      "cv_balanced_accuracy_mean": 0.5244652215024818,
+      "cv_balanced_accuracy_sd": 0.01264836538880102
+    },
+    {
+      "model": "logreg_demo",
+      "best_params": "{\"C\": 0.001, \"class_weight\": \"balanced\"}",
+      "cv_roc_auc_mean": 0.5856159446522142,
+      "cv_roc_auc_sd": 0.04236797482863013,
+      "cv_average_precision_mean": 0.17522563826241644,
+      "cv_average_precision_sd": 0.02374484179410357,
+      "cv_recall_mean": 0.6184770779847091,
+      "cv_recall_sd": 0.06951830335298091,
+      "cv_precision_mean": 0.159266657161017,
+      "cv_precision_sd": 0.014213653347306699,
+      "cv_f1_mean": 0.25270247744285135,
+      "cv_f1_sd": 0.02008077547474113,
+      "cv_accuracy_mean": 0.5143643305930408,
+      "cv_accuracy_sd": 0.021756078895493008,
+      "cv_balanced_accuracy_mean": 0.5588016589248654,
+      "cv_balanced_accuracy_sd": 0.03247313874499281
+    }
+  ],
+  "h5": {
+    "auc_demo_mean": 0.5856159446522142,
+    "auc_demo_sd": 0.04236797482863013,
+    "auc_full_mean": 0.735717835635614,
+    "auc_full_sd": 0.04654184949100679,
+    "gain_mean": 0.1501018909833997,
+    "gain_sd": 0.073543487486077,
+    "paired_t": 4.563803584289994,
+    "p_value": 0.010309068225635296,
+    "folds": 5,
+    "holdout_auc_demo": 0.5470370847933278,
+    "holdout_auc_full": 0.6741258594058486,
+    "best_params_demo": {
+      "C": 0.001,
+      "class_weight": "balanced"
+    }
+  },
+  "best_params": {
+    "logreg": {
+      "C": 0.001,
+      "class_weight": "balanced"
+    },
+    "tree": {
+      "class_weight": null,
+      "max_depth": 10,
+      "min_samples_leaf": 200
+    }
+  },
+  "tree_shape": {
+    "depth": 10,
+    "leaves": 221
+  },
+  "holdout_05": {
+    "naive": {
+      "model_name": "Majority-class baseline",
+      "weighted": false,
+      "threshold": 0.5,
+      "tn": 28448.0,
+      "fp": 0.0,
+      "fn": 4068.0,
+      "tp": 0.0,
+      "accuracy": 0.8748923606839709,
+      "precision": NaN,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "f1": 0.0,
+      "npv": 0.8748923606839709,
+      "balanced_accuracy": 0.5,
+      "flagged_rate": 0.0,
+      "roc_auc": 0.5,
+      "pr_auc": 0.12510763931602903
+    },
+    "logreg_demo": {
+      "model_name": "Logistic regression (age, female, urban)",
+      "weighted": false,
+      "threshold": 0.5,
+      "tn": 12765.0,
+      "fp": 15683.0,
+      "fn": 1667.0,
+      "tp": 2401.0,
+      "accuracy": 0.46641653339894207,
+      "precision": 0.13276929882769298,
+      "recall": 0.5902163225172075,
+      "specificity": 0.4487134420697413,
+      "f1": 0.21677500902853017,
+      "npv": 0.8844927937915743,
+      "balanced_accuracy": 0.5194648822934744,
+      "flagged_rate": 0.5561569688768606,
+      "roc_auc": 0.5470370847933278,
+      "pr_auc": 0.14762040396362008
+    },
+    "logreg": {
+      "model_name": "Logistic regression",
+      "weighted": false,
+      "threshold": 0.5,
+      "tn": 17578.0,
+      "fp": 10870.0,
+      "fn": 1488.0,
+      "tp": 2580.0,
+      "accuracy": 0.6199409521466355,
+      "precision": 0.19182156133828995,
+      "recall": 0.6342182890855457,
+      "specificity": 0.6178993250843644,
+      "f1": 0.29455417285078206,
+      "npv": 0.9219553131228365,
+      "balanced_accuracy": 0.6260588070849551,
+      "flagged_rate": 0.41364251445442246,
+      "roc_auc": 0.6741258594058486,
+      "pr_auc": 0.21419420228146957
+    },
+    "tree": {
+      "model_name": "Decision tree",
+      "weighted": false,
+      "threshold": 0.5,
+      "tn": 28004.0,
+      "fp": 444.0,
+      "fn": 3894.0,
+      "tp": 174.0,
+      "accuracy": 0.8665887563045885,
+      "precision": 0.2815533980582524,
+      "recall": 0.04277286135693215,
+      "specificity": 0.984392575928009,
+      "f1": 0.07426376440460948,
+      "npv": 0.8779233807762242,
+      "balanced_accuracy": 0.5135827186424706,
+      "flagged_rate": 0.019006027801697627,
+      "roc_auc": 0.7112117328669094,
+      "pr_auc": 0.23573268708836673
+    }
+  },
+  "holdout_05_weighted": {
+    "naive": {
+      "model_name": "Majority-class baseline",
+      "weighted": true,
+      "threshold": 0.5,
+      "tn": 9438255.29802528,
+      "fp": 0.0,
+      "fn": 1647569.6148227917,
+      "tp": 0.0,
+      "accuracy": 0.8513805127020075,
+      "precision": NaN,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "f1": 0.0,
+      "npv": 0.8513805127020075,
+      "balanced_accuracy": 0.5,
+      "flagged_rate": 0.0,
+      "roc_auc": 0.5,
+      "pr_auc": 0.1486194872979924
+    },
+    "logreg_demo": {
+      "model_name": "Logistic regression (age, female, urban)",
+      "weighted": true,
+      "threshold": 0.5,
+      "tn": 3666675.610769856,
+      "fp": 5771579.687255613,
+      "fn": 662384.8786180097,
+      "tp": 985184.7362047792,
+      "accuracy": 0.41962239017352865,
+      "precision": 0.14580717551496775,
+      "recall": 0.5979624334785664,
+      "specificity": 0.38849082748767594,
+      "f1": 0.23444682986589874,
+      "npv": 0.8469910780314203,
+      "balanced_accuracy": 0.49322663048312115,
+      "flagged_rate": 0.6094958631025674,
+      "roc_auc": 0.5117950697056461,
+      "pr_auc": 0.15668138974233675
+    },
+    "logreg": {
+      "model_name": "Logistic regression",
+      "weighted": true,
+      "threshold": 0.5,
+      "tn": 6959819.576179866,
+      "fp": 2478435.7218456087,
+      "fn": 764321.1837245682,
+      "tp": 883248.4310982195,
+      "accuracy": 0.7074861878964116,
+      "precision": 0.2627398621981659,
+      "recall": 0.5360917214980452,
+      "specificity": 0.7374053102415964,
+      "f1": 0.35264671028715605,
+      "npv": 0.9010477401328424,
+      "balanced_accuracy": 0.6367485158698207,
+      "flagged_rate": 0.30324167839307115,
+      "roc_auc": 0.7132781559485697,
+      "pr_auc": 0.2562020875430199
+    },
+    "tree": {
+      "model_name": "Decision tree",
+      "weighted": true,
+      "threshold": 0.5,
+      "tn": 9352336.96791267,
+      "fp": 85918.33011262989,
+      "fn": 1605527.3192617323,
+      "tp": 42042.29556105906,
+      "accuracy": 0.8474226624836881,
+      "precision": 0.3285565019685874,
+      "recall": 0.025517765794425034,
+      "specificity": 0.9908967995249497,
+      "f1": 0.04735745368020658,
+      "npv": 0.8534817299078146,
+      "balanced_accuracy": 0.5082072826596874,
+      "flagged_rate": 0.011542724757035173,
+      "roc_auc": 0.7486481787115036,
+      "pr_auc": 0.307871235260658
+    }
+  },
+  "cost_thresholds": [
+    {
+      "model": "logreg",
+      "cost_ratio_fn_to_fp": 1,
+      "threshold": 0.93,
+      "recall": 0.0,
+      "precision": NaN,
+      "specificity": 1.0,
+      "f1": 0.0,
+      "flagged_rate": 0.0,
+      "cost_per_1000": 125.10763931602904
+    },
+    {
+      "model": "logreg",
+      "cost_ratio_fn_to_fp": 3,
+      "threshold": 0.78,
+      "recall": 0.12266470009832842,
+      "precision": 0.3070769230769231,
+      "specificity": 0.9604190101237345,
+      "f1": 0.17530300368874055,
+      "flagged_rate": 0.04997539672776479,
+      "cost_per_1000": 363.9131504490097
+    },
+    {
+      "model": "logreg",
+      "cost_ratio_fn_to_fp": 5,
+      "threshold": 0.57,
+      "recall": 0.5152409046214356,
+      "precision": 0.21018852787805856,
+      "specificity": 0.7231439820022497,
+      "f1": 0.2985754985754986,
+      "flagged_rate": 0.3066797884118588,
+      "cost_per_1000": 545.4545454545455
+    },
+    {
+      "model": "logreg",
+      "cost_ratio_fn_to_fp": 10,
+      "threshold": 0.41,
+      "recall": 0.7765486725663717,
+      "precision": 0.1769351405847429,
+      "specificity": 0.48344347581552305,
+      "f1": 0.2882036310555606,
+      "flagged_rate": 0.5490835281092386,
+      "cost_per_1000": 731.4860376430065
+    },
+    {
+      "model": "tree",
+      "cost_ratio_fn_to_fp": 1,
+      "threshold": 0.89,
+      "recall": 0.0024582104228121925,
+      "precision": 0.5,
+      "specificity": 0.99964848143982,
+      "f1": 0.004892367906066536,
+      "flagged_rate": 0.0006150818058801821,
+      "cost_per_1000": 125.10763931602904
+    },
+    {
+      "model": "tree",
+      "cost_ratio_fn_to_fp": 3,
+      "threshold": 0.3,
+      "recall": 0.2718780727630285,
+      "precision": 0.2702834799608993,
+      "specificity": 0.8950365579302587,
+      "f1": 0.271078431372549,
+      "flagged_rate": 0.12584573748308525,
+      "cost_per_1000": 365.11255997047607
+    },
+    {
+      "model": "tree",
+      "cost_ratio_fn_to_fp": 5,
+      "threshold": 0.16,
+      "recall": 0.6206981317600787,
+      "precision": 0.2369557057057057,
+      "specificity": 0.7141802587176603,
+      "f1": 0.34297745177940775,
+      "flagged_rate": 0.327715586172961,
+      "cost_per_1000": 487.32931479886827
+    },
+    {
+      "model": "tree",
+      "cost_ratio_fn_to_fp": 10,
+      "threshold": 0.09,
+      "recall": 0.7900688298918387,
+      "precision": 0.1953205712549377,
+      "specificity": 0.5345542744656918,
+      "f1": 0.31320956975101105,
+      "flagged_rate": 0.5060585557879198,
+      "cost_per_1000": 669.8548406938123
+    }
+  ],
+  "recommended_threshold": {
+    "logreg": 0.57,
+    "tree": 0.16
+  },
+  "recommended_cost_ratio": 5,
+  "threshold_comparison": [
+    {
+      "model": "naive",
+      "threshold_label": "0.50 (default)",
+      "threshold": 0.5,
+      "tn": 28448.0,
+      "fp": 0.0,
+      "fn": 4068.0,
+      "tp": 0.0,
+      "accuracy": 0.8748923606839709,
+      "precision": NaN,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "f1": 0.0,
+      "npv": 0.8748923606839709,
+      "balanced_accuracy": 0.5,
+      "flagged_rate": 0.0,
+      "flagged_per_1000": 0.0,
+      "caught_per_1000": 0.0,
+      "missed_per_1000": 125.10763931602904,
+      "false_alarms_per_1000": 0.0,
+      "out_of_school_per_1000": 125.10763931602904,
+      "cost_per_1000_ratio1": 125.10763931602904,
+      "cost_per_1000_ratio3": 375.3229179480871,
+      "cost_per_1000_ratio5": 625.5381965801452,
+      "cost_per_1000_ratio10": 1251.0763931602903
+    },
+    {
+      "model": "logreg",
+      "threshold_label": "0.50 (default)",
+      "threshold": 0.5,
+      "tn": 17578.0,
+      "fp": 10870.0,
+      "fn": 1488.0,
+      "tp": 2580.0,
+      "accuracy": 0.6199409521466355,
+      "precision": 0.19182156133828995,
+      "recall": 0.6342182890855457,
+      "specificity": 0.6178993250843644,
+      "f1": 0.29455417285078206,
+      "npv": 0.9219553131228365,
+      "balanced_accuracy": 0.6260588070849551,
+      "flagged_rate": 0.41364251445442246,
+      "flagged_per_1000": 413.64251445442244,
+      "caught_per_1000": 79.34555295854348,
+      "missed_per_1000": 45.76208635748554,
+      "false_alarms_per_1000": 334.296961495879,
+      "out_of_school_per_1000": 125.10763931602904,
+      "cost_per_1000_ratio1": 380.0590478533645,
+      "cost_per_1000_ratio3": 471.5832205683356,
+      "cost_per_1000_ratio5": 563.1073932833067,
+      "cost_per_1000_ratio10": 791.9178250707344
+    },
+    {
+      "model": "logreg",
+      "threshold_label": "recommended",
+      "threshold": 0.57,
+      "tn": 20572.0,
+      "fp": 7876.0,
+      "fn": 1972.0,
+      "tp": 2096.0,
+      "accuracy": 0.6971337187845984,
+      "precision": 0.21018852787805856,
+      "recall": 0.5152409046214356,
+      "specificity": 0.7231439820022497,
+      "f1": 0.2985754985754986,
+      "npv": 0.912526614620298,
+      "balanced_accuracy": 0.6191924433118426,
+      "flagged_rate": 0.3066797884118588,
+      "flagged_per_1000": 306.6797884118588,
+      "caught_per_1000": 64.46057325624308,
+      "missed_per_1000": 60.64706605978595,
+      "false_alarms_per_1000": 242.2192151556157,
+      "out_of_school_per_1000": 125.10763931602904,
+      "cost_per_1000_ratio1": 302.86628121540167,
+      "cost_per_1000_ratio3": 424.16041333497355,
+      "cost_per_1000_ratio5": 545.4545454545455,
+      "cost_per_1000_ratio10": 848.6898757534752
+    },
+    {
+      "model": "tree",
+      "threshold_label": "0.50 (default)",
+      "threshold": 0.5,
+      "tn": 28004.0,
+      "fp": 444.0,
+      "fn": 3894.0,
+      "tp": 174.0,
+      "accuracy": 0.8665887563045885,
+      "precision": 0.2815533980582524,
+      "recall": 0.04277286135693215,
+      "specificity": 0.984392575928009,
+      "f1": 0.07426376440460948,
+      "npv": 0.8779233807762242,
+      "balanced_accuracy": 0.5135827186424706,
+      "flagged_rate": 0.019006027801697627,
+      "flagged_per_1000": 19.006027801697627,
+      "caught_per_1000": 5.351211711157584,
+      "missed_per_1000": 119.75642760487145,
+      "false_alarms_per_1000": 13.654816090540042,
+      "out_of_school_per_1000": 125.10763931602904,
+      "cost_per_1000_ratio1": 133.41124369541149,
+      "cost_per_1000_ratio3": 372.9240989051544,
+      "cost_per_1000_ratio5": 612.4369541148973,
+      "cost_per_1000_ratio10": 1211.2190921392546
+    },
+    {
+      "model": "tree",
+      "threshold_label": "recommended",
+      "threshold": 0.16,
+      "tn": 20317.0,
+      "fp": 8131.0,
+      "fn": 1543.0,
+      "tp": 2525.0,
+      "accuracy": 0.7024849304957559,
+      "precision": 0.2369557057057057,
+      "recall": 0.6206981317600787,
+      "specificity": 0.7141802587176603,
+      "f1": 0.34297745177940775,
+      "npv": 0.9294144556267154,
+      "balanced_accuracy": 0.6674391952388695,
+      "flagged_rate": 0.327715586172961,
+      "flagged_per_1000": 327.715586172961,
+      "caught_per_1000": 77.65407799237299,
+      "missed_per_1000": 47.45356132365605,
+      "false_alarms_per_1000": 250.06150818058802,
+      "out_of_school_per_1000": 125.10763931602904,
+      "cost_per_1000_ratio1": 297.5150695042441,
+      "cost_per_1000_ratio3": 392.42219215155615,
+      "cost_per_1000_ratio5": 487.32931479886827,
+      "cost_per_1000_ratio10": 724.5971214171485
+    }
+  ],
+  "edge_profile": [
+    {
+      "feature": "age",
+      "FN": 9.7145,
+      "FP": 8.7153,
+      "TN": 9.6991,
+      "TP": 8.6345,
+      "gap_FN_minus_TP": 1.08
+    },
+    {
+      "feature": "female",
+      "FN": 0.3768,
+      "FP": 0.3954,
+      "TN": 0.3381,
+      "TP": 0.458,
+      "gap_FN_minus_TP": -0.0812
+    },
+    {
+      "feature": "urban",
+      "FN": 0.4265,
+      "FP": 0.1534,
+      "TN": 0.3802,
+      "TP": 0.1407,
+      "gap_FN_minus_TP": 0.2857
+    },
+    {
+      "feature": "female_x_urban",
+      "FN": 0.1795,
+      "FP": 0.064,
+      "TN": 0.1367,
+      "TP": 0.0725,
+      "gap_FN_minus_TP": 0.107
+    },
+    {
+      "feature": "bform",
+      "FN": 0.5375,
+      "FP": 0.3888,
+      "TN": 0.6561,
+      "TP": 0.3001,
+      "gap_FN_minus_TP": 0.2374
+    },
+    {
+      "feature": "any_disability",
+      "FN": 0.0751,
+      "FP": 0.1412,
+      "TN": 0.1028,
+      "TP": 0.1231,
+      "gap_FN_minus_TP": -0.048
+    },
+    {
+      "feature": "assets_n",
+      "FN": 2.9726,
+      "FP": 2.0627,
+      "TN": 3.6549,
+      "TP": 1.729,
+      "gap_FN_minus_TP": 1.2436
+    },
+    {
+      "feature": "digital_n",
+      "FN": 2.2622,
+      "FP": 1.2028,
+      "TN": 3.1057,
+      "TP": 1.0635,
+      "gap_FN_minus_TP": 1.1987
+    },
+    {
+      "feature": "house",
+      "FN": 2.1176,
+      "FP": 1.2359,
+      "TN": 2.3517,
+      "TP": 1.2371,
+      "gap_FN_minus_TP": 0.8805
+    },
+    {
+      "feature": "p_hat",
+      "FN": 0.402,
+      "FP": 0.687,
+      "TN": 0.3343,
+      "TP": 0.6974,
+      "gap_FN_minus_TP": -0.2954
+    }
+  ],
+  "edge_counts": {
+    "TN": 20572,
+    "FP": 7876,
+    "TP": 2096,
+    "FN": 1972
+  },
+  "province_outcomes": [
+    {
+      "province": "Balochistan",
+      "FN": 0.0177,
+      "FP": 0.6079,
+      "TN": 0.2195,
+      "TP": 0.1549,
+      "n": 6223
+    },
+    {
+      "province": "Khyber Pakhtuknkhwa",
+      "FN": 0.0665,
+      "FP": 0.1972,
+      "TN": 0.6651,
+      "TP": 0.0711,
+      "n": 7889
+    },
+    {
+      "province": "Punjab",
+      "FN": 0.0548,
+      "FP": 0.1747,
+      "TN": 0.7424,
+      "TP": 0.0282,
+      "n": 13387
+    },
+    {
+      "province": "Sindh",
+      "FN": 0.1204,
+      "FP": 0.0395,
+      "TN": 0.8015,
+      "TP": 0.0387,
+      "n": 5017
+    }
+  ],
+  "subgroups_logreg": [
+    {
+      "variable": "female",
+      "level": 0,
+      "n": 20744,
+      "positives": 2365,
+      "prevalence": 0.11400887003470883,
+      "recall": 0.480338266384778,
+      "fnr": 0.519661733615222,
+      "precision": 0.19260766361478468,
+      "specificity": 0.7408999401490832,
+      "f1": 0.27496066803824276,
+      "roc_auc": 0.6683276724389116,
+      "flag_small": false
+    },
+    {
+      "variable": "female",
+      "level": 1,
+      "n": 11772,
+      "positives": 1703,
+      "prevalence": 0.1446653075093442,
+      "recall": 0.5637110980622431,
+      "fnr": 0.43628890193775693,
+      "precision": 0.23564064801178203,
+      "specificity": 0.6907339358426855,
+      "f1": 0.3323524320581617,
+      "roc_auc": 0.6777991984490807,
+      "flag_small": false
+    },
+    {
+      "variable": "urban",
+      "level": 0,
+      "n": 22350,
+      "positives": 2932,
+      "prevalence": 0.13118568232662192,
+      "recall": 0.614256480218281,
+      "fnr": 0.38574351978171895,
+      "precision": 0.21265792891722754,
+      "specificity": 0.6566072716036667,
+      "f1": 0.3159371984913604,
+      "roc_auc": 0.6813661590482214,
+      "flag_small": false
+    },
+    {
+      "variable": "urban",
+      "level": 1,
+      "n": 10166,
+      "positives": 1136,
+      "prevalence": 0.11174503246114499,
+      "recall": 0.2596830985915493,
+      "fnr": 0.7403169014084507,
+      "precision": 0.19627411842980705,
+      "specificity": 0.8662236987818384,
+      "f1": 0.2235695339143615,
+      "roc_auc": 0.6609077917115094,
+      "flag_small": false
+    },
+    {
+      "variable": "any_disability",
+      "level": 0,
+      "n": 28884,
+      "positives": 3662,
+      "prevalence": 0.1267829940451461,
+      "recall": 0.5019115237575096,
+      "fnr": 0.4980884762424904,
+      "precision": 0.21367123924668682,
+      "specificity": 0.7318214257394339,
+      "f1": 0.29973907371167646,
+      "roc_auc": 0.6736987782245706,
+      "flag_small": false
+    },
+    {
+      "variable": "any_disability",
+      "level": 1,
+      "n": 3632,
+      "positives": 406,
+      "prevalence": 0.11178414096916299,
+      "recall": 0.6354679802955665,
+      "fnr": 0.3645320197044335,
+      "precision": 0.18832116788321168,
+      "specificity": 0.6553006819590824,
+      "f1": 0.2905405405405405,
+      "roc_auc": 0.7064056205888731,
+      "flag_small": false
+    },
+    {
+      "variable": "bform",
+      "level": 1,
+      "n": 18249,
+      "positives": 1689,
+      "prevalence": 0.09255301660364952,
+      "recall": 0.3724097098875074,
+      "fnr": 0.6275902901124926,
+      "precision": 0.17041452180980765,
+      "specificity": 0.8150966183574879,
+      "f1": 0.23382899628252787,
+      "roc_auc": 0.6745475841120292,
+      "flag_small": false
+    },
+    {
+      "variable": "bform",
+      "level": 0,
+      "n": 14267,
+      "positives": 2379,
+      "prevalence": 0.16674844045699866,
+      "recall": 0.6166456494325346,
+      "fnr": 0.38335435056746536,
+      "precision": 0.23356153478745423,
+      "specificity": 0.5950538358008075,
+      "f1": 0.33879907621247113,
+      "roc_auc": 0.6356483194415922,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Sindh",
+      "n": 5017,
+      "positives": 798,
+      "prevalence": 0.15905919872433724,
+      "recall": 0.24310776942355888,
+      "fnr": 0.7568922305764412,
+      "precision": 0.49489795918367346,
+      "specificity": 0.9530694477364304,
+      "f1": 0.32605042016806723,
+      "roc_auc": 0.8452706190695987,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Khyber Pakhtuknkhwa",
+      "n": 7889,
+      "positives": 1086,
+      "prevalence": 0.1376600329572823,
+      "recall": 0.5165745856353591,
+      "fnr": 0.4834254143646409,
+      "precision": 0.2649976381672178,
+      "specificity": 0.7712773776275172,
+      "f1": 0.3502965969403684,
+      "roc_auc": 0.7051203442095338,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Balochistan",
+      "n": 6223,
+      "positives": 1074,
+      "prevalence": 0.17258556966093525,
+      "recall": 0.8975791433891993,
+      "fnr": 0.10242085661080069,
+      "precision": 0.20307562671160734,
+      "specificity": 0.2652942318896873,
+      "f1": 0.3312145679436523,
+      "roc_auc": 0.6637214725572719,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Punjab",
+      "n": 13387,
+      "positives": 1110,
+      "prevalence": 0.0829162620452678,
+      "recall": 0.3396396396396396,
+      "fnr": 0.6603603603603604,
+      "precision": 0.13880706921944036,
+      "specificity": 0.8094811436018571,
+      "f1": 0.1970726607422896,
+      "roc_auc": 0.6142210549720528,
+      "flag_small": false
+    }
+  ],
+  "subgroups_tree": [
+    {
+      "variable": "female",
+      "level": 0,
+      "n": 20744,
+      "positives": 2365,
+      "prevalence": 0.11400887003470883,
+      "recall": 0.6033826638477802,
+      "fnr": 0.39661733615221983,
+      "precision": 0.2423161827135337,
+      "specificity": 0.7572229174601447,
+      "f1": 0.3457717470317422,
+      "roc_auc": 0.7228431382586087,
+      "flag_small": false
+    },
+    {
+      "variable": "female",
+      "level": 1,
+      "n": 11772,
+      "positives": 1703,
+      "prevalence": 0.1446653075093442,
+      "recall": 0.6447445684086905,
+      "fnr": 0.35525543159130946,
+      "precision": 0.2303335431088735,
+      "specificity": 0.6356142615949946,
+      "f1": 0.33941267387944357,
+      "roc_auc": 0.6875069361394632,
+      "flag_small": false
+    },
+    {
+      "variable": "urban",
+      "level": 0,
+      "n": 22350,
+      "positives": 2932,
+      "prevalence": 0.13118568232662192,
+      "recall": 0.6630286493860846,
+      "fnr": 0.33697135061391537,
+      "precision": 0.23354156655454109,
+      "specificity": 0.671438871150479,
+      "f1": 0.34541577825159914,
+      "roc_auc": 0.7101589051775001,
+      "flag_small": false
+    },
+    {
+      "variable": "urban",
+      "level": 1,
+      "n": 10166,
+      "positives": 1136,
+      "prevalence": 0.11174503246114499,
+      "recall": 0.511443661971831,
+      "fnr": 0.488556338028169,
+      "precision": 0.24914236706689538,
+      "specificity": 0.8060908084163898,
+      "f1": 0.3350634371395617,
+      "roc_auc": 0.711875224213498,
+      "flag_small": false
+    },
+    {
+      "variable": "any_disability",
+      "level": 0,
+      "n": 28884,
+      "positives": 3662,
+      "prevalence": 0.1267829940451461,
+      "recall": 0.6239759694156198,
+      "fnr": 0.37602403058438016,
+      "precision": 0.24080514279692275,
+      "specificity": 0.7143763381175164,
+      "f1": 0.34750209109573416,
+      "roc_auc": 0.7138809718146334,
+      "flag_small": false
+    },
+    {
+      "variable": "any_disability",
+      "level": 1,
+      "n": 3632,
+      "positives": 406,
+      "prevalence": 0.11178414096916299,
+      "recall": 0.5911330049261084,
+      "fnr": 0.40886699507389157,
+      "precision": 0.20565552699228792,
+      "specificity": 0.71264724116553,
+      "f1": 0.30514939605848695,
+      "roc_auc": 0.6823289986837243,
+      "flag_small": false
+    },
+    {
+      "variable": "bform",
+      "level": 1,
+      "n": 18249,
+      "positives": 1689,
+      "prevalence": 0.09255301660364952,
+      "recall": 0.5298993487270575,
+      "fnr": 0.47010065127294254,
+      "precision": 0.19206008583690987,
+      "specificity": 0.7726449275362319,
+      "f1": 0.28193416286029294,
+      "roc_auc": 0.7094066859159722,
+      "flag_small": false
+    },
+    {
+      "variable": "bform",
+      "level": 0,
+      "n": 14267,
+      "positives": 2379,
+      "prevalence": 0.16674844045699866,
+      "recall": 0.6851618327028163,
+      "fnr": 0.3148381672971837,
+      "precision": 0.27184789859906605,
+      "specificity": 0.6327388963660835,
+      "f1": 0.38925373134328356,
+      "roc_auc": 0.6832892692734824,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Sindh",
+      "n": 5017,
+      "positives": 798,
+      "prevalence": 0.15905919872433724,
+      "recall": 0.4598997493734336,
+      "fnr": 0.5401002506265664,
+      "precision": 0.5235378031383737,
+      "specificity": 0.9208343209291301,
+      "f1": 0.4896597731821214,
+      "roc_auc": 0.8416012180249154,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Khyber Pakhtuknkhwa",
+      "n": 7889,
+      "positives": 1086,
+      "prevalence": 0.1376600329572823,
+      "recall": 0.7016574585635359,
+      "fnr": 0.2983425414364641,
+      "precision": 0.28841786525359575,
+      "specificity": 0.7236513302954579,
+      "f1": 0.40879828326180256,
+      "roc_auc": 0.7382771629567607,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Balochistan",
+      "n": 6223,
+      "positives": 1074,
+      "prevalence": 0.17258556966093525,
+      "recall": 0.8100558659217877,
+      "fnr": 0.1899441340782123,
+      "precision": 0.21739130434782608,
+      "specificity": 0.3917265488444358,
+      "f1": 0.34278959810874704,
+      "roc_auc": 0.6316257825912573,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Punjab",
+      "n": 13387,
+      "positives": 1110,
+      "prevalence": 0.0829162620452678,
+      "recall": 0.47387387387387386,
+      "fnr": 0.5261261261261261,
+      "precision": 0.15886439142253095,
+      "specificity": 0.7731530504194836,
+      "f1": 0.23795521375254466,
+      "roc_auc": 0.6707615573543733,
+      "flag_small": false
+    }
+  ],
+  "subgroup_counts_file": [
+    {
+      "variable": "female",
+      "level": "0",
+      "n": 99668,
+      "positives": 12159,
+      "negatives": 87509,
+      "prevalence": 0.122,
+      "flag_small": false
+    },
+    {
+      "variable": "female",
+      "level": "1",
+      "n": 62135,
+      "positives": 9129,
+      "negatives": 53006,
+      "prevalence": 0.1469,
+      "flag_small": false
+    },
+    {
+      "variable": "urban",
+      "level": "0",
+      "n": 101302,
+      "positives": 15182,
+      "negatives": 86120,
+      "prevalence": 0.1499,
+      "flag_small": false
+    },
+    {
+      "variable": "urban",
+      "level": "1",
+      "n": 60501,
+      "positives": 6106,
+      "negatives": 54395,
+      "prevalence": 0.1009,
+      "flag_small": false
+    },
+    {
+      "variable": "any_disability",
+      "level": "0",
+      "n": 141133,
+      "positives": 17508,
+      "negatives": 123625,
+      "prevalence": 0.1241,
+      "flag_small": false
+    },
+    {
+      "variable": "any_disability",
+      "level": "1",
+      "n": 20670,
+      "positives": 3780,
+      "negatives": 16890,
+      "prevalence": 0.1829,
+      "flag_small": false
+    },
+    {
+      "variable": "bform",
+      "level": "0",
+      "n": 67617,
+      "positives": 11784,
+      "negatives": 55833,
+      "prevalence": 0.1743,
+      "flag_small": false
+    },
+    {
+      "variable": "bform",
+      "level": "1",
+      "n": 94186,
+      "positives": 9504,
+      "negatives": 84682,
+      "prevalence": 0.1009,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Balochistan",
+      "n": 32302,
+      "positives": 8415,
+      "negatives": 23887,
+      "prevalence": 0.2605,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Islamabad Capital Territory",
+      "n": 807,
+      "positives": 52,
+      "negatives": 755,
+      "prevalence": 0.0644,
+      "flag_small": true
+    },
+    {
+      "variable": "province",
+      "level": "Khyber Pakhtuknkhwa",
+      "n": 35280,
+      "positives": 3846,
+      "negatives": 31434,
+      "prevalence": 0.109,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Punjab",
+      "n": 49309,
+      "positives": 5230,
+      "negatives": 44079,
+      "prevalence": 0.1061,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Sindh",
+      "n": 44105,
+      "positives": 3745,
+      "negatives": 40360,
+      "prevalence": 0.0849,
+      "flag_small": false
+    }
+  ],
+  "odds_ratios": [
+    {
+      "feature": "house",
+      "coef": -0.57176,
+      "std_err": 0.01382,
+      "z": -41.37782,
+      "p_value": 0.0,
+      "odds_ratio": 0.56453,
+      "or_ci_low": 0.54945,
+      "or_ci_high": 0.58003,
+      "std_coef": -0.46598,
+      "abs_std_coef": 0.46598,
+      "label": "Housing (1 kachha - 3 pacca)",
+      "pseudo_r2": 0.11799
+    },
+    {
+      "feature": "digital_n",
+      "coef": -0.20185,
+      "std_err": 0.00712,
+      "z": -28.3377,
+      "p_value": 0.0,
+      "odds_ratio": 0.81721,
+      "or_ci_low": 0.80588,
+      "or_ci_high": 0.8287,
+      "std_coef": -0.32301,
+      "abs_std_coef": 0.32301,
+      "label": "Digital use (0-5)",
+      "pseudo_r2": 0.11799
+    },
+    {
+      "feature": "province_Balochistan",
+      "coef": 0.58251,
+      "std_err": 0.02291,
+      "z": 25.42948,
+      "p_value": 0.0,
+      "odds_ratio": 1.79052,
+      "or_ci_low": 1.71191,
+      "or_ci_high": 1.87274,
+      "std_coef": 0.23375,
+      "abs_std_coef": 0.23375,
+      "label": "Province: Balochistan",
+      "pseudo_r2": 0.11799
+    },
+    {
+      "feature": "any_disability",
+      "coef": 0.62954,
+      "std_err": 0.02265,
+      "z": 27.79181,
+      "p_value": 0.0,
+      "odds_ratio": 1.87675,
+      "or_ci_low": 1.79525,
+      "or_ci_high": 1.96195,
+      "std_coef": 0.21295,
+      "abs_std_coef": 0.21295,
+      "label": "Any disability",
+      "pseudo_r2": 0.11799
+    },
+    {
+      "feature": "female",
+      "coef": 0.38927,
+      "std_err": 0.02098,
+      "z": 18.5505,
+      "p_value": 0.0,
+      "odds_ratio": 1.4759,
+      "or_ci_low": 1.41643,
+      "or_ci_high": 1.53786,
+      "std_coef": 0.18982,
+      "abs_std_coef": 0.18982,
+      "label": "Female",
+      "pseudo_r2": 0.11799
+    },
+    {
+      "feature": "bform",
+      "coef": -0.28368,
+      "std_err": 0.01794,
+      "z": -15.80871,
+      "p_value": 0.0,
+      "odds_ratio": 0.753,
+      "or_ci_low": 0.72698,
+      "or_ci_high": 0.77996,
+      "std_coef": -0.13966,
+      "abs_std_coef": 0.13966,
+      "label": "B-form registered",
+      "pseudo_r2": 0.11799
+    },
+    {
+      "feature": "female_x_urban",
+      "coef": -0.26255,
+      "std_err": 0.03822,
+      "z": -6.87014,
+      "p_value": 0.0,
+      "odds_ratio": 0.76909,
+      "or_ci_low": 0.71359,
+      "or_ci_high": 0.82891,
+      "std_coef": -0.09491,
+      "abs_std_coef": 0.09491,
+      "label": "Female x Urban",
+      "pseudo_r2": 0.11799
+    },
+    {
+      "feature": "assets_n",
+      "coef": -0.03689,
+      "std_err": 0.00657,
+      "z": -5.61537,
+      "p_value": 0.0,
+      "odds_ratio": 0.96378,
+      "or_ci_low": 0.95145,
+      "or_ci_high": 0.97627,
+      "std_coef": -0.05748,
+      "abs_std_coef": 0.05748,
+      "label": "Household assets (0-8)",
+      "pseudo_r2": 0.11799
+    },
+    {
+      "feature": "urban",
+      "coef": -0.11641,
+      "std_err": 0.02482,
+      "z": -4.6897,
+      "p_value": 0.0,
+      "odds_ratio": 0.89011,
+      "or_ci_low": 0.84784,
+      "or_ci_high": 0.93448,
+      "std_coef": -0.05676,
+      "abs_std_coef": 0.05676,
+      "label": "Urban",
+      "pseudo_r2": 0.11799
+    },
+    {
+      "feature": "province_Sindh",
+      "coef": -0.11769,
+      "std_err": 0.02735,
+      "z": -4.30323,
+      "p_value": 2e-05,
+      "odds_ratio": 0.88897,
+      "or_ci_low": 0.84258,
+      "or_ci_high": 0.93793,
+      "std_coef": -0.05405,
+      "abs_std_coef": 0.05405,
+      "label": "Province: Sindh",
+      "pseudo_r2": 0.11799
+    },
+    {
+      "feature": "age",
+      "coef": -0.0145,
+      "std_err": 0.00277,
+      "z": -5.23671,
+      "p_value": 0.0,
+      "odds_ratio": 0.9856,
+      "or_ci_low": 0.98027,
+      "or_ci_high": 0.99097,
+      "std_coef": -0.04658,
+      "abs_std_coef": 0.04658,
+      "label": "Age (years)",
+      "pseudo_r2": 0.11799
+    },
+    {
+      "feature": "province_Khyber Pakhtuknkhwa",
+      "coef": -0.10685,
+      "std_err": 0.02774,
+      "z": -3.85162,
+      "p_value": 0.00012,
+      "odds_ratio": 0.89866,
+      "or_ci_low": 0.8511,
+      "or_ci_high": 0.94888,
+      "std_coef": -0.04366,
+      "abs_std_coef": 0.04366,
+      "label": "Province: KP",
+      "pseudo_r2": 0.11799
+    },
+    {
+      "feature": "province_Islamabad Capital Territory",
+      "coef": -0.20506,
+      "std_err": 0.14893,
+      "z": -1.37694,
+      "p_value": 0.16853,
+      "odds_ratio": 0.8146,
+      "or_ci_low": 0.60838,
+      "or_ci_high": 1.09071,
+      "std_coef": -0.01615,
+      "abs_std_coef": 0.01615,
+      "label": "Province: ICT",
+      "pseudo_r2": 0.11799
+    }
+  ],
+  "sk_coefs": [
+    {
+      "feature": "house",
+      "std_coef": -0.42779,
+      "raw_coef": -0.5249,
+      "odds_ratio_raw_unit": 0.59161,
+      "abs_std_coef": 0.42779,
+      "label": "Housing (1 kachha - 3 pacca)"
+    },
+    {
+      "feature": "digital_n",
+      "std_coef": -0.33781,
+      "raw_coef": -0.2111,
+      "odds_ratio_raw_unit": 0.80969,
+      "abs_std_coef": 0.33781,
+      "label": "Digital use (0-5)"
+    },
+    {
+      "feature": "province_Balochistan",
+      "std_coef": 0.2515,
+      "raw_coef": 0.62673,
+      "odds_ratio_raw_unit": 1.87149,
+      "abs_std_coef": 0.2515,
+      "label": "Province: Balochistan"
+    },
+    {
+      "feature": "any_disability",
+      "std_coef": 0.17993,
+      "raw_coef": 0.53193,
+      "odds_ratio_raw_unit": 1.70222,
+      "abs_std_coef": 0.17993,
+      "label": "Any disability"
+    },
+    {
+      "feature": "female",
+      "std_coef": 0.17559,
+      "raw_coef": 0.36007,
+      "odds_ratio_raw_unit": 1.43343,
+      "abs_std_coef": 0.17559,
+      "label": "Female"
+    },
+    {
+      "feature": "bform",
+      "std_coef": -0.14915,
+      "raw_coef": -0.30296,
+      "odds_ratio_raw_unit": 0.73863,
+      "abs_std_coef": 0.14915,
+      "label": "B-form registered"
+    },
+    {
+      "feature": "assets_n",
+      "std_coef": -0.09461,
+      "raw_coef": -0.06072,
+      "odds_ratio_raw_unit": 0.94109,
+      "abs_std_coef": 0.09461,
+      "label": "Household assets (0-8)"
+    },
+    {
+      "feature": "urban",
+      "std_coef": -0.08986,
+      "raw_coef": -0.18429,
+      "odds_ratio_raw_unit": 0.83169,
+      "abs_std_coef": 0.08986,
+      "label": "Urban"
+    },
+    {
+      "feature": "age",
+      "std_coef": -0.0829,
+      "raw_coef": -0.02581,
+      "odds_ratio_raw_unit": 0.97452,
+      "abs_std_coef": 0.0829,
+      "label": "Age (years)"
+    },
+    {
+      "feature": "female_x_urban",
+      "std_coef": -0.07775,
+      "raw_coef": -0.21509,
+      "odds_ratio_raw_unit": 0.80647,
+      "abs_std_coef": 0.07775,
+      "label": "Female x Urban"
+    },
+    {
+      "feature": "province_Sindh",
+      "std_coef": -0.07042,
+      "raw_coef": -0.15332,
+      "odds_ratio_raw_unit": 0.85786,
+      "abs_std_coef": 0.07042,
+      "label": "Province: Sindh"
+    },
+    {
+      "feature": "province_Khyber Pakhtuknkhwa",
+      "std_coef": -0.04291,
+      "raw_coef": -0.10502,
+      "odds_ratio_raw_unit": 0.90031,
+      "abs_std_coef": 0.04291,
+      "label": "Province: KP"
+    },
+    {
+      "feature": "province_Islamabad Capital Territory",
+      "std_coef": -0.01472,
+      "raw_coef": -0.18694,
+      "odds_ratio_raw_unit": 0.82949,
+      "abs_std_coef": 0.01472,
+      "label": "Province: ICT"
+    }
+  ],
+  "gini": [
+    {
+      "feature": "house",
+      "gini_importance": 0.30498,
+      "label": "Housing (1 kachha - 3 pacca)"
+    },
+    {
+      "feature": "province_Balochistan",
+      "gini_importance": 0.15449,
+      "label": "Province: Balochistan"
+    },
+    {
+      "feature": "digital_n",
+      "gini_importance": 0.15218,
+      "label": "Digital use (0-5)"
+    },
+    {
+      "feature": "assets_n",
+      "gini_importance": 0.10131,
+      "label": "Household assets (0-8)"
+    },
+    {
+      "feature": "age",
+      "gini_importance": 0.06819,
+      "label": "Age (years)"
+    },
+    {
+      "feature": "any_disability",
+      "gini_importance": 0.05308,
+      "label": "Any disability"
+    },
+    {
+      "feature": "female",
+      "gini_importance": 0.04632,
+      "label": "Female"
+    },
+    {
+      "feature": "bform",
+      "gini_importance": 0.04257,
+      "label": "B-form registered"
+    },
+    {
+      "feature": "province_Sindh",
+      "gini_importance": 0.03093,
+      "label": "Province: Sindh"
+    },
+    {
+      "feature": "province_Khyber Pakhtuknkhwa",
+      "gini_importance": 0.02574,
+      "label": "Province: KP"
+    },
+    {
+      "feature": "urban",
+      "gini_importance": 0.01656,
+      "label": "Urban"
+    },
+    {
+      "feature": "female_x_urban",
+      "gini_importance": 0.00365,
+      "label": "Female x Urban"
+    },
+    {
+      "feature": "province_Islamabad Capital Territory",
+      "gini_importance": 0.0,
+      "label": "Province: ICT"
+    }
+  ],
+  "perm_logreg": [
+    {
+      "feature": "digital_n",
+      "auc_drop_mean": 0.04402,
+      "auc_drop_std": 0.00156,
+      "label": "Digital use (0-5)"
+    },
+    {
+      "feature": "house",
+      "auc_drop_mean": 0.03812,
+      "auc_drop_std": 0.00207,
+      "label": "Housing (1 kachha - 3 pacca)"
+    },
+    {
+      "feature": "bform",
+      "auc_drop_mean": 0.01198,
+      "auc_drop_std": 0.00076,
+      "label": "B-form registered"
+    },
+    {
+      "feature": "female",
+      "auc_drop_mean": 0.00937,
+      "auc_drop_std": 0.00078,
+      "label": "Female"
+    },
+    {
+      "feature": "assets_n",
+      "auc_drop_mean": 0.00863,
+      "auc_drop_std": 0.00047,
+      "label": "Household assets (0-8)"
+    },
+    {
+      "feature": "province_Balochistan",
+      "auc_drop_mean": 0.0015,
+      "auc_drop_std": 0.001,
+      "label": "Province: Balochistan"
+    },
+    {
+      "feature": "age",
+      "auc_drop_mean": 0.00011,
+      "auc_drop_std": 0.0005,
+      "label": "Age (years)"
+    },
+    {
+      "feature": "province_Islamabad Capital Territory",
+      "auc_drop_mean": 0.0,
+      "auc_drop_std": 0.0,
+      "label": "Province: ICT"
+    },
+    {
+      "feature": "any_disability",
+      "auc_drop_mean": -9e-05,
+      "auc_drop_std": 0.00098,
+      "label": "Any disability"
+    },
+    {
+      "feature": "province_Khyber Pakhtuknkhwa",
+      "auc_drop_mean": -0.00082,
+      "auc_drop_std": 0.00028,
+      "label": "Province: KP"
+    },
+    {
+      "feature": "urban",
+      "auc_drop_mean": -0.00128,
+      "auc_drop_std": 0.00022,
+      "label": "Urban"
+    },
+    {
+      "feature": "female_x_urban",
+      "auc_drop_mean": -0.00153,
+      "auc_drop_std": 0.00028,
+      "label": "Female x Urban"
+    },
+    {
+      "feature": "province_Sindh",
+      "auc_drop_mean": -0.00654,
+      "auc_drop_std": 0.00037,
+      "label": "Province: Sindh"
+    }
+  ],
+  "perm_tree": [
+    {
+      "feature": "digital_n",
+      "auc_drop_mean": 0.05311,
+      "auc_drop_std": 0.00175,
+      "label": "Digital use (0-5)"
+    },
+    {
+      "feature": "house",
+      "auc_drop_mean": 0.05092,
+      "auc_drop_std": 0.00357,
+      "label": "Housing (1 kachha - 3 pacca)"
+    },
+    {
+      "feature": "age",
+      "auc_drop_mean": 0.03007,
+      "auc_drop_std": 0.00199,
+      "label": "Age (years)"
+    },
+    {
+      "feature": "assets_n",
+      "auc_drop_mean": 0.02388,
+      "auc_drop_std": 0.00242,
+      "label": "Household assets (0-8)"
+    },
+    {
+      "feature": "female",
+      "auc_drop_mean": 0.0183,
+      "auc_drop_std": 0.00137,
+      "label": "Female"
+    },
+    {
+      "feature": "bform",
+      "auc_drop_mean": 0.01329,
+      "auc_drop_std": 0.00107,
+      "label": "B-form registered"
+    },
+    {
+      "feature": "province_Balochistan",
+      "auc_drop_mean": 0.01254,
+      "auc_drop_std": 0.00164,
+      "label": "Province: Balochistan"
+    },
+    {
+      "feature": "province_Khyber Pakhtuknkhwa",
+      "auc_drop_mean": 0.00988,
+      "auc_drop_std": 0.00097,
+      "label": "Province: KP"
+    },
+    {
+      "feature": "province_Sindh",
+      "auc_drop_mean": 0.00745,
+      "auc_drop_std": 0.00098,
+      "label": "Province: Sindh"
+    },
+    {
+      "feature": "any_disability",
+      "auc_drop_mean": 0.00316,
+      "auc_drop_std": 0.00067,
+      "label": "Any disability"
+    },
+    {
+      "feature": "female_x_urban",
+      "auc_drop_mean": 0.00198,
+      "auc_drop_std": 0.00053,
+      "label": "Female x Urban"
+    },
+    {
+      "feature": "province_Islamabad Capital Territory",
+      "auc_drop_mean": 0.0,
+      "auc_drop_std": 0.0,
+      "label": "Province: ICT"
+    },
+    {
+      "feature": "urban",
+      "auc_drop_mean": -0.00193,
+      "auc_drop_std": 0.00083,
+      "label": "Urban"
+    }
+  ],
+  "h4_cells": [
+    {
+      "female": 0,
+      "urban": 0,
+      "cell": "Boy, rural",
+      "p_out_of_school": 0.38809431312457465
+    },
+    {
+      "female": 0,
+      "urban": 1,
+      "cell": "Boy, urban",
+      "p_out_of_school": 0.3453322903987148
+    },
+    {
+      "female": 1,
+      "urban": 0,
+      "cell": "Girl, rural",
+      "p_out_of_school": 0.47620272675705305
+    },
+    {
+      "female": 1,
+      "urban": 1,
+      "cell": "Girl, urban",
+      "p_out_of_school": 0.37880033833686844
+    }
+  ],
+  "h4_gaps": {
+    "rural_gender_gap": 0.0881084136324784,
+    "urban_gender_gap": 0.03346804793815361
+  },
+  "pseudo_r2": 0.11799339382356866,
+  "hypotheses": [
+    {
+      "hypothesis": "H1 Poverty",
+      "feature": "assets_n",
+      "H1_expectation": "OR < 1",
+      "odds_ratio": 0.963782804508021,
+      "or_ci_low": 0.9514529803255642,
+      "or_ci_high": 0.9762724101694515,
+      "p_value": 1.9614665511937667e-08,
+      "std_coef_rank": 8.0,
+      "gini_rank": 4.0,
+      "perm_auc_drop_logreg": 0.008628172982110615,
+      "H0_rejected_at_5pct": true
+    },
+    {
+      "hypothesis": "H2 Legal identity",
+      "feature": "bform",
+      "H1_expectation": "OR < 1",
+      "odds_ratio": 0.7530039159243537,
+      "or_ci_low": 0.7269801529262144,
+      "or_ci_high": 0.7799592535161836,
+      "p_value": 2.709604164593222e-56,
+      "std_coef_rank": 6.0,
+      "gini_rank": 8.0,
+      "perm_auc_drop_logreg": 0.011979647974036379,
+      "H0_rejected_at_5pct": true
+    },
+    {
+      "hypothesis": "H3 Disability",
+      "feature": "any_disability",
+      "H1_expectation": "OR > 1",
+      "odds_ratio": 1.8767458839840476,
+      "or_ci_low": 1.79524645703852,
+      "or_ci_high": 1.9619451687214722,
+      "p_value": 5.447863425146364e-170,
+      "std_coef_rank": 4.0,
+      "gini_rank": 6.0,
+      "perm_auc_drop_logreg": -9.147561961284634e-05,
+      "H0_rejected_at_5pct": true
+    },
+    {
+      "hypothesis": "H4 Gender x area",
+      "feature": "female_x_urban",
+      "H1_expectation": "OR != 1",
+      "odds_ratio": 0.7690893962394099,
+      "or_ci_low": 0.7135878908348874,
+      "or_ci_high": 0.8289077028981746,
+      "p_value": 6.4137301723804604e-12,
+      "std_coef_rank": 7.0,
+      "gini_rank": 12.0,
+      "perm_auc_drop_logreg": -0.0015282355814483673,
+      "H0_rejected_at_5pct": true
+    },
+    {
+      "hypothesis": "H5 Feature value",
+      "feature": "13 vs 3 features",
+      "H1_expectation": "AUC gain > 0",
+      "odds_ratio": NaN,
+      "or_ci_low": NaN,
+      "or_ci_high": NaN,
+      "p_value": 0.010309068225635296,
+      "std_coef_rank": NaN,
+      "gini_rank": NaN,
+      "perm_auc_drop_logreg": 0.1501018909833997,
+      "H0_rejected_at_5pct": true
+    }
+  ],
+  "figures": {
+    "roc_pr": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig1_roc_pr_curves.png",
+    "cm_05": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig2_confusion_matrices_default.png",
+    "cm_rec": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig2_confusion_matrices_recommended.png",
+    "threshold": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig3_threshold_cost_curves.png",
+    "importance": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig4_feature_importance.png",
+    "odds": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig5_odds_ratios.png",
+    "h5": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig6_h5_auc_by_fold.png",
+    "h4": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig7_gender_area_cells.png",
+    "subgroup": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig8_subgroup_recall.png",
+    "tree": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig9_tree_top_levels.png"
+  },
+  "runtime_sec": 11.0
+}

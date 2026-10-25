@@ -1,0 +1,14 @@
+variable,level,n,positives,negatives,prevalence,flag_small
+female,0,99668,12159,87509,0.122,FALSE
+female,1,62135,9129,53006,0.1469,FALSE
+urban,0,101302,15182,86120,0.1499,FALSE
+urban,1,60501,6106,54395,0.1009,FALSE
+any_disability,0,141133,17508,123625,0.1241,FALSE
+any_disability,1,20670,3780,16890,0.1829,FALSE
+bform,0,67617,11784,55833,0.1743,FALSE
+bform,1,94186,9504,84682,0.1009,FALSE
+province,Balochistan,32302,8415,23887,0.2605,FALSE
+province,Islamabad Capital Territory,807,52,755,0.0644,TRUE
+province,Khyber Pakhtuknkhwa,35280,3846,31434,0.109,FALSE
+province,Punjab,49309,5230,44079,0.1061,FALSE
+province,Sindh,44105,3745,40360,0.0849,FALSE

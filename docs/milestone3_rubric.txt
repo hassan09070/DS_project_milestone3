@@ -1,0 +1,37 @@
+Baseline Model Submission, Evaluation, and Initial Findings
+Your goal is to establish rigorous baseline performance benchmarks, implement a leakage-free cross-validation framework, and evaluate how classification errors carry asymmetric real-world social consequences.
+
+You will implement at least two baseline machine learning algorithms alongside a naive benchmark, evaluate performance across standard metrics, and analyze feature importance drivers to form initial policy insights.
+
+1.    Required Technical & Analytical Deliverables
+A.  Baseline Model Implementation & Architecture Selection
+Naive Benchmark: Implement a simple heuristic baseline (e.g., Majority Class Classifier or Mean Target Predictor) to establish the absolute performance
+Algorithm Selection: Implement at least two distinct machine learning models (e.g., K-Nearest Neighbors, Logistic Regression, Decision Trees, or Ridge/Lasso Regression).
+Model Justification: Provide concise theoretical and domain-grounded justification for choosing these baseline architectures for your specific social impact dataset.
+
+B.  Experimental Setup & Cross-Validation Strategy
+Data Partitioning: Document train/test split ratios (e.g., 70/30 or 80/20) and apply stratified sampling if your target classes are imbalanced.
+Validation Framework: Implement K-Fold Cross-Validation (or Repeated Stratified CV) to prevent data leakage and measure performance variance across folds.
+Hyperparameter Exploration: Demonstrate systematic baseline tuning (e.g., tuning neighbor count K in KNN, tree depth or other parameters in Decision Trees, or regularization penalty in Logistic Regression).
+
+C.  Evaluation Metrics & Asymmetric Error Cost Analysis
+Performance Metrics: Report comprehensive classification metrics: Accuracy, Precision, Recall (Sensitivity), Specificity, F1-Score, and ROC-AUC.
+Asymmetric Error Evaluation: Quantify and analyze the real-world social consequences of prediction. Compare the penalty of False Positives (e.g., false alarms, misdirected emergency relief) versus False Negatives (e.g., undetected failing infrastructure, missed public health diagnoses).
+Confusion Matrix: Present formatted confusion matrices and examine misclassified edge cases to identify systematic model weaknesses.
+
+D.  Feature Importance & Initial Research Insights
+Driver Analysis: Extract and rank top predictive features driving model outputs (e.g., via Gini importance, standardized regression coefficients, or odds ratios).
+Initial Policy Takeaways: Translate feature drivers into preliminary actionable recommendations for decision-makers.
+Roadmap for Milestone 04: Outline current model limitations (e.g., underfitting, class imbalance, potential demographic bias) and detail your plan for advanced modeling, fairness auditing, and ethical evaluation in Milestone 04.
+
+2.    Submission Requirements
+Executable Code Notebook (.ipynb or .Rmd): Clean, fully documented, and reproducible code containing all data splits, cross-validation runs, model fits, and metric
+Manuscript Enhancement: A structured report detailing model architectures, experimental setup, evaluation metrics, asymmetric error cost analysis, and initial policy findings embedded into the initial manuscript draft submitted at the end of Milestone 02.
+Model Artifacts / Scripts: Clean modular R or Python scripts used for model training and evaluation.
+
+3. Grading Rubric
+Evaluation Criterion	Weighted Score	Detailed Performance Expectations
+Baseline Model Implementation & CV Framework	35	Successful implementation of at least two baseline ML algorithms plus a naive benchmark. Rigorous cross-validation strategy, stratified splitting, and hyperparameter tuning setup without data leakage.
+Evaluation Metrics & Asymmetric Error Analysis	30	Comprehensive reporting of performance metrics (Accuracy, Precision, Recall, F1, ROC-AUC). In-depth qualitative and quantitative evaluation of asymmetric error costs (FP vs. FN penalties) and confusion matrix diagnostics.
+Feature Importance & Initial Research Insights	20	Clear extraction and interpretation of feature importance drivers. Translation of baseline results into meaningful social impact insights and a structured roadmap for advanced modeling.
+Written Report & Code Reproducibility	15	Fully executable, well-commented code notebook (.ipynb / .Rmd). High-quality, well-drafted PDF manuscript.

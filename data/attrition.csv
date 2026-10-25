@@ -1,0 +1,6 @@
+step,rows
+raw file,183854
+after dropping exact duplicate rows,183854
+age 5-16 (missing age dropped),161803
+valid enrolment status (C4),161803
+complete cases on full feature set (separate file),161803

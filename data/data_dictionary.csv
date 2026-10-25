@@ -1,0 +1,16 @@
+variable,definition
+out_of_school,"1 if C4 in {1 never enrolled, 2 dropout}; 0 if currently enrolled (target)"
+age,"C1, completed years, restricted to the analysis window"
+female,"1 if C2 == 2, 0 if C2 == 1"
+urban,"1 if Area == 2 (Urban), 0 if Area == 1 (Rural); 2025 coding"
+female_x_urban,female * urban interaction
+bform,"C3, B-form registration with NADRA (1 = registered)"
+func_*,"C14-C19 functioning domains, 1 = no difficulty .. 4 = cannot do at all"
+any_disability,1 if any domain >= 3; 0 if all six observed and < 3; NaN otherwise
+n_domains_ge3,number of domains with >= 3 (NaN when undeterminable)
+func_max,highest domain score
+assets_n,"sum of 8 household asset flags (toilet, tv, pc, radio, solar, elect, cars, bikes)"
+digital_n,sum of 5 digital-use flags; NaN if any is missing
+house,"housing structure 1 Kachha, 2 Semi-Kachha/Pacca, 3 Pacca"
+log_weight,natural log of the sampling weight (right-skew check)
+c5-c13,enrolled-only and assessment columns kept for EDA only; NOT model features

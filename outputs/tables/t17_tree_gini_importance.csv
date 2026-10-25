@@ -1,0 +1,14 @@
+feature,gini_importance,label
+house,0.30498158783849394,Housing (1 kachha - 3 pacca)
+province_Balochistan,0.15448937615544,Province: Balochistan
+digital_n,0.15217937316394525,Digital use (0-5)
+assets_n,0.10130827622628726,Household assets (0-8)
+age,0.06819390950485045,Age (years)
+any_disability,0.053075427242812,Any disability
+female,0.04632132132485618,Female
+bform,0.04256975542730344,B-form registered
+province_Sindh,0.03092534748160252,Province: Sindh
+province_Khyber Pakhtuknkhwa,0.025737712591024937,Province: KP
+urban,0.016564949422459514,Urban
+female_x_urban,0.003652963620924572,Female x Urban
+province_Islamabad Capital Territory,0.0,Province: ICT

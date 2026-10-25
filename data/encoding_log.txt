@@ -1,0 +1,47 @@
+Loaded aser2025_clean.csv: 161,803 rows x 46 columns
+
+One-hot encoded 'province' (5 categories): ['Punjab', 'Sindh', 'Khyber Pakhtuknkhwa', 'Balochistan', 'Islamabad Capital Territory']
+Reference category (dropped, all-zero row = this province): 'Punjab' (largest, n=49,309)
+Dummy columns created: ['province_Sindh', 'province_Khyber Pakhtuknkhwa', 'province_Balochistan', 'province_Islamabad Capital Territory']
+
+Final training file: 161,803 rows x 17 columns
+Model features (X), 13 total: ['age', 'female', 'urban', 'female_x_urban', 'bform', 'any_disability', 'assets_n', 'digital_n', 'house', 'province_Sindh', 'province_Khyber Pakhtuknkhwa', 'province_Balochistan', 'province_Islamabad Capital Territory']
+Target (y): out_of_school
+Kept but NOT a feature: cid (row id), district (CV group key), weight (optional weighted evaluation)
+
+Columns dropped from aser2025_clean.csv and why:
+  log_weight: redundant with weight (log transform was only for the EDA skew check)
+  status: string mirror of the target (c4) -> leakage
+  c5: enrolled-only (grade) -> leakage / undefined for out-of-school children
+  c6: enrolled-only (school type) -> leakage
+  c7: enrolled-only (surveyed school) -> leakage
+  c8: enrolled-only (stipend) -> leakage
+  c9: enrolled-only (paid tuition) -> leakage
+  c10: assessment outcome, exists only for assessed children -> leakage
+  c11: assessment outcome (reading, Urdu) -> leakage
+  c12: assessment outcome (reading, English) -> leakage
+  c13: assessment outcome (numeracy) -> leakage
+  func_see: redundant with any_disability (deterministic function of the 6 func_* domains)
+  func_hear: redundant with any_disability
+  func_walk: redundant with any_disability
+  func_selfcare: redundant with any_disability
+  func_comm: redundant with any_disability
+  func_concentrate: redundant with any_disability
+  n_domains_ge3: redundant with any_disability (same underlying 6 domains)
+  func_max: redundant with any_disability (same underlying 6 domains)
+  toilet: redundant with assets_n (one of the 8 flags it sums)
+  tv: redundant with assets_n
+  pc: redundant with assets_n
+  radio: redundant with assets_n
+  solar: redundant with assets_n
+  elect: redundant with assets_n
+  cars: redundant with assets_n
+  bikes: redundant with assets_n
+  smartph: redundant with digital_n (one of the 5 flags it sums)
+  mobilephone: redundant with digital_n
+  whatsapp: redundant with digital_n
+  sms: redundant with digital_n
+  internet: redundant with digital_n
+
+Missing values remaining in X: 0 (left in place on purpose - impute inside each CV fold, not here)
+Target balance: 21,288 / 161,803 (13.2%) out_of_school = 1
