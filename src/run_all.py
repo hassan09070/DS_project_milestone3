@@ -15,11 +15,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy import stats
+from sklearn.base import clone
+from sklearn.model_selection import cross_val_predict
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import config as C                                            # noqa: E402
-from cv import cv_table, fold_scores, make_holdout, tune       # noqa: E402
+from cv import cv_table, fold_scores, make_holdout, make_inner_cv, tune       # noqa: E402
 from data import describe_split, load_subgroup_counts, load_training, province_of, split_xy  # noqa: E402
 import evaluate as ev                                          # noqa: E402
 import importance as imp                                       # noqa: E402
@@ -107,6 +109,10 @@ def main() -> dict:
                "holdout_auc_demo": float(ev.metrics(yte, probas["logreg_demo"])["roc_auc"]),
                "holdout_auc_full": float(ev.metrics(yte, probas["logreg"])["roc_auc"]),
                "best_params_demo": {k.replace("clf__", ""): v for k, v in gs_demo.best_params_.items()}}
+    # 5 folds are a thin basis for a t-test: add a district-cluster bootstrap of the hold-out AUC gain
+    R["h5"]["holdout_bootstrap"] = ev.cluster_bootstrap_auc_diff(yte, probas["logreg_demo"], probas["logreg"], groups[test_idx])
+    print(f"        H5 hold-out AUC gain {R['h5']['holdout_bootstrap']['diff_point']:+.4f} "
+          f"[{R['h5']['holdout_bootstrap']['ci_low']:+.4f}, {R['h5']['holdout_bootstrap']['ci_high']:+.4f}] (district bootstrap)")
     R["best_params"] = {"logreg": {k.replace("clf__", ""): v for k, v in gs_lr.best_params_.items()},
                         "tree": {k.replace("clf__", ""): v for k, v in gs_tree.best_params_.items()}}
     tree_clf = fitted["tree"].named_steps["clf"]
@@ -126,17 +132,34 @@ def main() -> dict:
     assert R["holdout_05"]["logreg"]["roc_auc"] > 0.5 and R["holdout_05"]["tree"]["roc_auc"] > 0.5
     assert abs(R["holdout_05"]["naive"]["accuracy"] - (1 - yte.mean())) < 1e-9
 
-    # ------------------------------------------------------------------ 4. threshold sweep + asymmetric cost
-    sweeps, best_t, cms_05, cms_rec = {}, [], {}, {}
+    # ------------------------------------------------------------------ 4. threshold selection (training OOF) + asymmetric cost
+    # The operating threshold is a model setting, so it is chosen WITHOUT touching the hold-out: each tuned pipeline is
+    # re-fitted on the district-grouped inner folds, out-of-fold probabilities are collected for every training child,
+    # the cost curve is swept on those, and only the chosen threshold is then applied once to the hold-out.
+    print("[threshold] out-of-fold training predictions for threshold selection ...")
+    oof = {}
     for key in ("logreg", "tree"):
-        sw = ev.threshold_sweep(yte, probas[key])
-        sw.insert(0, "model", key)
-        sweeps[key] = sw
-        bt = ev.best_thresholds(sw)
-        bt.insert(0, "model", key)
+        oof[key] = cross_val_predict(clone(fitted[key]), Xtr, ytr, groups=gtr, cv=make_inner_cv(), method="predict_proba", n_jobs=-1)[:, 1]
+    sweeps_oof, sweeps_ho, best_t, cms_05, cms_rec = {}, {}, [], {}, {}
+    for key in ("logreg", "tree"):
+        sw = ev.threshold_sweep(ytr, oof[key]); sw.insert(0, "model", key); sw.insert(1, "data", "train_oof"); sweeps_oof[key] = sw
+        sh = ev.threshold_sweep(yte, probas[key]); sh.insert(0, "model", key); sh.insert(1, "data", "holdout"); sweeps_ho[key] = sh
+        bt = ev.best_thresholds(sw); bt.insert(0, "model", key)
+        # hold-out performance at the OOF-selected threshold (reported, never used for selection)
+        for i, r in bt.iterrows():
+            c = ev.confusion(yte, (probas[key] >= r["threshold"]).astype(int)); m = ev.metrics_from_counts(c)
+            bt.loc[i, "holdout_recall"], bt.loc[i, "holdout_precision"], bt.loc[i, "holdout_specificity"] = m["recall"], m["precision"], m["specificity"]
+            bt.loc[i, "holdout_flagged_rate"] = m["flagged_rate"]
+            bt.loc[i, "holdout_cost_per_1000"] = ev.expected_cost(c, r["cost_ratio_fn_to_fp"])
+            # what the hold-out optimum WOULD have been, to show how much selection-on-test flatters
+            col = f"cost_per_1000_ratio{int(r['cost_ratio_fn_to_fp'])}"
+            bt.loc[i, "holdout_oracle_threshold"] = sh.loc[sh[col].idxmin(), "threshold"]
+            bt.loc[i, "holdout_oracle_cost_per_1000"] = sh[col].min()
         best_t.append(bt)
-    save(pd.concat(sweeps.values()), "t08_threshold_sweep")
+    save(pd.concat(list(sweeps_oof.values()) + list(sweeps_ho.values())), "t08_threshold_sweep")
     best_t = pd.concat(best_t, ignore_index=True)
+    best_t = best_t.rename(columns={"recall": "oof_recall", "precision": "oof_precision", "specificity": "oof_specificity",
+                                    "f1": "oof_f1", "flagged_rate": "oof_flagged_rate", "cost_per_1000": "oof_cost_per_1000"})
     save(best_t, "t09_cost_minimising_thresholds")
     R["cost_thresholds"] = best_t.to_dict(orient="records")
 
@@ -149,6 +172,7 @@ def main() -> dict:
     cms_05["naive"] = {**ev.confusion(yte, (probas["naive"] >= 0.5).astype(int)), "threshold": 0.5}
     R["recommended_threshold"] = rec_thr
     R["recommended_cost_ratio"] = C.RECOMMENDED_COST_RATIO
+    R["threshold_selection"] = "cost-minimising threshold chosen on district-grouped out-of-fold training predictions; hold-out touched once"
 
     comp_rows = []
     for key in ("naive", "logreg", "tree"):
@@ -249,7 +273,7 @@ def main() -> dict:
         "roc_pr": plots.roc_pr_curves(yte, {k: probas[k] for k in ("logreg_demo", "logreg", "tree")}, names, float(yte.mean())),
         "cm_05": plots.confusion_heatmaps({k: cms_05[k] for k in ("naive", "logreg", "tree")}, names, "_default"),
         "cm_rec": plots.confusion_heatmaps(cms_rec, names, "_recommended"),
-        "threshold": plots.threshold_curves(sweeps, names, C.RECOMMENDED_COST_RATIO),
+        "threshold": plots.threshold_curves(sweeps_oof, sweeps_ho, rec_thr, names, C.RECOMMENDED_COST_RATIO),
         "importance": plots.importance_bars(sk_coef, gini, perm_lr, perm_tree),
         "odds": plots.odds_ratio_forest(ors),
         "h5": plots.h5_auc_folds(auc_demo, auc_full),

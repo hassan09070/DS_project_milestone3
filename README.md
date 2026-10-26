@@ -46,8 +46,9 @@ Random state 42 throughout; the grouped folds, grid searches and permutation imp
 | `config.py` | Paths; column roles loaded from `data/feature_manifest.json` (target, 13 features, id, district group, weight); demographic subset for H5; cost ratios; thresholds grid |
 | `data.py` | `load_training()` with integrity assertions (161,803 rows, no NaN, unique ids, non-overlapping province dummies); `split_xy`, `describe_split`, `province_of` |
 | `cv.py` | `make_holdout()` - one fold of `StratifiedGroupKFold(5)` by district as test (~20%); `make_inner_cv()`; `tune()` = `GridSearchCV` on grouped folds refit on ROC-AUC; `cv_table`, `fold_scores` |
+| *(threshold selection)* | In `run_all.py`: out-of-fold training probabilities via `cross_val_predict` on the same grouped folds; the cost-minimising threshold is chosen there and applied once to the hold-out. The hold-out is never used to pick a threshold. |
 | `models.py` | `DummyClassifier(most_frequent)`; `StandardScaler -> LogisticRegression` pipeline + grid (C x class_weight); `DecisionTreeClassifier` + grid (max_depth x min_samples_leaf x class_weight) |
-| `evaluate.py` | Accuracy, precision, recall, specificity, F1, NPV, ROC-AUC, PR-AUC (optionally survey-weighted); formatted confusion matrices; threshold sweep; expected cost per 1,000 for FN:FP ratios 1/3/5/10; per-1,000 operational translation; subgroup metrics |
+| `evaluate.py` | Accuracy, precision, recall, specificity, F1, NPV, ROC-AUC, PR-AUC (optionally survey-weighted); formatted confusion matrices; threshold sweep; expected cost per 1,000 for FN:FP ratios 1/3/5/10; per-1,000 operational translation; subgroup metrics; district-cluster bootstrap of an AUC difference |
 | `importance.py` | statsmodels odds ratios with 95% CI; sklearn standardised coefficients; tree Gini importance; permutation importance on hold-out; H4 gender x area predicted cells |
 | `plots.py` | ROC/PR, confusion heatmaps, threshold/cost curves, importance panels, odds-ratio forest, H5 fold plot, H4 bars, subgroup recall, tree top levels |
 | `run_all.py` | Orchestrates the above and writes `outputs/` |
@@ -64,12 +65,12 @@ Random state 42 throughout; the grouped folds, grid searches and permutation imp
 - Partitioning: district-grouped, target-stratified hold-out (`cv.make_holdout`, asserts zero district overlap); `t01_split_description.csv`.
 - Validation framework: inner `StratifiedGroupKFold(5)` on the training districts; per-fold variance in `t05_cv_best_summary.csv`.
 - Hyperparameter exploration: full grids in `t02_cv_grid_logreg.csv`, `t03_cv_grid_tree.csv`, `t04_cv_grid_logreg_demo.csv`.
-- H5 required comparison (3 vs 13 features, same folds, paired t-test): `t06_h5_auc_by_fold.csv`, `fig6`.
+- H5 required comparison (3 vs 13 features, same folds, paired t-test plus a district-cluster bootstrap of the hold-out gain): `t06_h5_auc_by_fold.csv`, `results.json -> h5.holdout_bootstrap`, `fig6`.
 
 **C. Evaluation metrics and asymmetric error cost**
 - Metrics table (unweighted and ASER-weighted): `t07_holdout_metrics_threshold_0.5.csv`, `fig1`.
 - Confusion matrices: `t11_confusion_*.csv`, `fig2_confusion_matrices_default.png`, `fig2_confusion_matrices_recommended.png`.
-- Asymmetric cost: threshold sweep `t08`, cost-minimising thresholds per ratio `t09`, default vs recommended operating point with per-1,000 translation `t10`, `fig3`.
+- Asymmetric cost: threshold sweeps on training OOF and hold-out `t08`; thresholds chosen on training OOF with hold-out metrics and the hold-out's own optimum for comparison `t09`; default vs recommended operating point with per-1,000 translation `t10`; `fig3`.
 - Edge cases: misclassified profile `t12`, outcome share by province `t13`, subgroup metrics `t14`, `fig8`.
 
 **D. Feature importance and insights**
@@ -79,17 +80,23 @@ Random state 42 throughout; the grouped folds, grid searches and permutation imp
 
 ## Headline results (hold-out districts, n = 32,516)
 
-| Model | ROC-AUC | PR-AUC | Recall @0.5 | Recommended threshold (FN:FP = 5) | Recall / precision there |
+| Model | ROC-AUC (unweighted / ASER-weighted) | PR-AUC | Recall @0.5 | Threshold chosen on training OOF (FN:FP = 5) | Hold-out recall / precision there |
 |---|---|---|---|---|---|
-| Majority class | 0.500 | 0.125 | 0.00 | - | - |
-| Logistic regression (balanced, C = 0.001) | 0.674 | 0.214 | 0.63 | 0.57 | 0.52 / 0.21 |
-| Decision tree (depth 10, leaf >= 200) | 0.711 | 0.236 | 0.04 | 0.16 | 0.62 / 0.24 |
+| Majority class | 0.500 / 0.500 | 0.125 | 0.00 | - | - |
+| Logistic regression (balanced, C = 0.001) | 0.674 / 0.713 | 0.214 | 0.63 | 0.54 | 0.57 / 0.20 |
+| Decision tree (depth 10, leaf >= 200) | 0.711 / 0.749 | 0.236 | 0.04 | 0.16 | 0.62 / 0.24 |
 
-H5: full model +0.15 AUC over the demographic model in every CV fold (p = 0.010). All five Milestone 2 null
+H5: full model +0.15 AUC over the demographic model in every CV fold (paired t p = 0.010); hold-out gain +0.13 with a
+district-cluster bootstrap 95% interval of about [+0.08, +0.17]. All five Milestone 2 null
 hypotheses are rejected; housing quality and digital access are the strongest household drivers, disability and
 Balochistan residence the strongest risk factors, and the gender gap is concentrated in rural areas.
 
 ## Notes and caveats
+
+- All drivers are conditional associations from one cross-sectional survey, not causal effects; the report says so before
+  the policy takeaways.
+- The operating threshold is selected on training out-of-fold predictions, never on the hold-out; `t09` also reports the
+  hold-out's own optimum so the size of the avoided flattery is visible (about 1% of cost for logistic regression, none for the tree).
 
 - Islamabad Capital Territory is a single district and fell entirely into the training side of the grouped split,
   so it has no hold-out metrics; with 52 positives overall it is flagged as too small for subgroup conclusions.

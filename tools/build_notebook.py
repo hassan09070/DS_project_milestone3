@@ -40,6 +40,8 @@ sys.path.insert(0, str(Path("src").resolve()))
 import config as C
 from data import load_training, split_xy, describe_split, load_subgroup_counts, load_attrition, province_of
 from cv import make_holdout, make_inner_cv, tune, cv_table, fold_scores
+from sklearn.base import clone
+from sklearn.model_selection import cross_val_predict
 import models as M, evaluate as ev, importance as imp, plots
 
 print("Target:", C.TARGET)
@@ -123,12 +125,16 @@ display(cv_table(gs_tree)[["max_depth", "min_samples_leaf", "class_weight", "mea
 """)
 
 md("""
-**Interpretation of the tuning.** For logistic regression the strongest regularisation (`C = 0.001`) with balanced
-class weights wins on AUC; the ranking is flat across `C` (the coefficients are already well-determined with 129k
-rows), while balancing matters for recall at the default threshold. For the tree, moderate depth (10) with a large
-minimum leaf (200 children) is best - deeper, unconstrained trees over-fit district idiosyncrasies and lose AUC on
-unseen districts. Fold-to-fold standard deviations of ~0.05 AUC show how much performance varies between groups of
-districts, which is exactly the variance a random split would have hidden.
+**Interpretation of the tuning.** (In the grid tables, `recall`, `f1` and `accuracy` are measured at the default 0.5
+threshold; ROC-AUC and average precision are threshold-free.) For logistic regression the strongest regularisation
+(`C = 0.001`) with balanced class weights wins on AUC; the ranking is flat across `C` (the coefficients are already
+well-determined with 129k rows), while balancing matters for recall at the default threshold. For the tree, moderate
+depth (10) with a large minimum leaf (200 children) is best - deeper, unconstrained trees over-fit district
+idiosyncrasies and lose AUC on unseen districts. Because the refit criterion is ROC-AUC, the selected tree carries *no*
+class weighting, and at the default 0.5 cut-off it flags almost nobody (recall ~0.07 in CV, ~0.04 on hold-out): almost no
+leaf reaches a 50% out-of-school share. That is not a defect of the tree - it is why the operating threshold is set
+separately, on training data only, in section 6. Fold-to-fold standard deviations of ~0.05 AUC show how much
+performance varies between groups of districts, which is exactly the variance a random split would have hidden.
 
 ## 4. Hypothesis H5 - do poverty, B-form, disability and the controls add predictive value?
 
@@ -147,13 +153,19 @@ display(h5)
 print(f"mean AUC demographic = {auc_demo.mean():.4f} (sd {auc_demo.std(ddof=1):.4f}); full = {auc_full.mean():.4f} (sd {auc_full.std(ddof=1):.4f})")
 print(f"mean gain = {(auc_full-auc_demo).mean():+.4f}; paired t = {t:.2f}, p = {p:.4f}")
 print(f"hold-out AUC: demographic {ev.metrics(yte, probas['logreg_demo'])['roc_auc']:.4f} vs full {ev.metrics(yte, probas['logreg'])['roc_auc']:.4f}")
+# five folds are a thin basis for a t-test -> district-cluster bootstrap of the hold-out AUC gain
+bs = ev.cluster_bootstrap_auc_diff(yte, probas["logreg_demo"], probas["logreg"], groups[test_idx])
+print(f"hold-out gain {bs['diff_point']:+.4f} AUC, 95% district-bootstrap CI [{bs['ci_low']:+.4f}, {bs['ci_high']:+.4f}] "
+      f"({bs['n_clusters']} districts, {bs['n_boot']} draws, positive in {bs['share_positive']:.0%})")
 display(Image(plots.h5_auc_folds(auc_demo, auc_full)))
 """)
 
 md("""
-**H5 verdict.** The full model beats the demographic model in every fold (gain ~ +0.15 AUC, p ~ 0.01) and on
-the hold-out districts. Age, sex and area alone are close to chance (AUC ~ 0.59): *who is out of school is far
-better explained by household circumstances than by demographics*. We reject H0 for H5.
+**H5 verdict.** The full model beats the demographic model in every fold (gain ~ +0.15 AUC, paired t-test p ~ 0.01)
+and on the hold-out districts (+0.13). Five folds are a thin basis for a p-value, so the hold-out gain is also
+bootstrapped by resampling the 29 held-out *districts* with replacement: the 95% interval (~ +0.08 to +0.17) excludes
+zero comfortably. Age, sex and area alone are close to chance (AUC ~ 0.59): *who is out of school is far better
+explained by household circumstances than by demographics*. We reject H0 for H5.
 
 ## 5. Hold-out performance at the default threshold (0.5)
 
@@ -178,8 +190,12 @@ child is missed. The balanced logistic regression trades accuracy (62%) for reca
 tree has the better ranking quality (ROC-AUC 0.71, PR-AUC 0.24) but, because it was tuned without class weights, its
 default-threshold recall is only ~4%: almost no leaf reaches a 50% out-of-school share. This is the clearest
 demonstration that **the threshold, not the learner, decides who gets flagged** - which is the subject of the next
-section. Hold-out AUCs are ~0.03-0.06 below the CV means: the held-out districts are a harder group, within the
-fold-to-fold spread seen in CV.
+section. Applying the ASER sampling weights moves the metrics in *different directions for different models*: ROC-AUC
+rises from 0.674 to 0.713 for the full logistic model and from 0.711 to 0.749 for the tree, but falls from 0.547 to
+0.512 for the demographic-only model. The weights up-weight households the sample under-represents - predominantly
+poorer, rural ones - where the household features carry most of their signal and where age, sex and area alone
+separate least. Population-level statements should quote the weighted figures. Hold-out AUCs are ~0.03-0.06 below the
+CV means: the held-out districts are a harder group, within the fold-to-fold spread seen in CV.
 
 ## 6. Confusion matrices and asymmetric error costs
 
@@ -192,6 +208,13 @@ fold-to-fold spread seen in CV.
 We make this explicit by assigning a false negative a cost of *r* false positives (r = 1, 3, 5, 10), sweeping the
 classification threshold from 0.05 to 0.95 and reporting the expected cost per 1,000 children screened. The
 recommended operating point uses r = 5.
+
+**The threshold is chosen without looking at the hold-out.** A threshold is a model setting like `C` or `max_depth`;
+picking it on the test set and then reporting test performance at that value would be circular. So each tuned pipeline
+is re-fitted on the same five district-grouped training folds, out-of-fold probabilities are collected for every
+training child (`cross_val_predict`), the cost curve is swept on those, and only the chosen threshold is then applied -
+once - to the hold-out districts. For transparency the tables also show what the hold-out's *own* optimum would have
+been, so the size of the flattery that selection-on-test would have introduced is visible.
 """)
 
 code("""
@@ -202,17 +225,29 @@ display(Image(plots.confusion_heatmaps(cms_05, M.MODEL_NAMES, "_default")))
 """)
 
 code("""
-sweeps, best = {}, []
+fitted = {"logreg": gs_lr.best_estimator_, "tree": gs_tree.best_estimator_}
+oof, sweeps_oof, sweeps_ho, best = {}, {}, {}, []
 for k in ("logreg", "tree"):
-    sweeps[k] = ev.threshold_sweep(yte, probas[k])
-    b = ev.best_thresholds(sweeps[k]); b.insert(0, "model", k); best.append(b)
-best = pd.concat(best, ignore_index=True)
-display(best)
-display(Image(plots.threshold_curves(sweeps, M.MODEL_NAMES, C.RECOMMENDED_COST_RATIO)))
+    oof[k] = cross_val_predict(clone(fitted[k]), Xtr, ytr, groups=gtr, cv=make_inner_cv(), method="predict_proba", n_jobs=-1)[:, 1]
+    sweeps_oof[k] = ev.threshold_sweep(ytr, oof[k])          # selection: training out-of-fold
+    sweeps_ho[k] = ev.threshold_sweep(yte, probas[k])        # reported only
+    b = ev.best_thresholds(sweeps_oof[k]); b.insert(0, "model", k)
+    for i, r in b.iterrows():
+        c = ev.confusion(yte, (probas[k] >= r["threshold"]).astype(int)); m = ev.metrics_from_counts(c)
+        b.loc[i, "holdout_recall"], b.loc[i, "holdout_precision"] = m["recall"], m["precision"]
+        b.loc[i, "holdout_cost"] = ev.expected_cost(c, r["cost_ratio_fn_to_fp"])
+        col = f"cost_per_1000_ratio{int(r['cost_ratio_fn_to_fp'])}"
+        b.loc[i, "holdout_oracle_thr"] = sweeps_ho[k].loc[sweeps_ho[k][col].idxmin(), "threshold"]
+        b.loc[i, "holdout_oracle_cost"] = sweeps_ho[k][col].min()
+    best.append(b)
+best = pd.concat(best, ignore_index=True).rename(columns={"recall": "oof_recall", "precision": "oof_precision", "cost_per_1000": "oof_cost"})
+display(best[["model", "cost_ratio_fn_to_fp", "threshold", "oof_recall", "oof_precision", "oof_cost", "holdout_recall", "holdout_precision", "holdout_cost", "holdout_oracle_thr", "holdout_oracle_cost"]])
+rec_thr = {k: float(best[(best.model == k) & (best.cost_ratio_fn_to_fp == C.RECOMMENDED_COST_RATIO)].threshold.item()) for k in ("logreg", "tree")}
+print("thresholds chosen on training OOF (r = 5):", rec_thr)
+display(Image(plots.threshold_curves(sweeps_oof, sweeps_ho, rec_thr, M.MODEL_NAMES, C.RECOMMENDED_COST_RATIO)))
 """)
 
 code("""
-rec_thr = {k: float(best[(best.model == k) & (best.cost_ratio_fn_to_fp == C.RECOMMENDED_COST_RATIO)].threshold.item()) for k in ("logreg", "tree")}
 cms_rec = {k: {**ev.confusion(yte, (probas[k] >= t).astype(int)), "threshold": t} for k, t in rec_thr.items()}
 rows = []
 for k in ("naive", "logreg", "tree"):
@@ -232,12 +267,17 @@ md("""
   the base rate when a false alarm costs as much as a missed child. This is the honest baseline the cost framing
   exposes.
 - Once a missed child is weighted 3-5x a wasted visit, the optimum moves to a low threshold that flags roughly a
-  third of all children and catches 50-60% of those out of school. At r = 10 the models flag over half of all
-  children to catch ~78%.
-- **Recommendation for deployment (r = 5).** Decision tree at threshold ~0.16: per 1,000 children screened it flags
-  ~330, catches ~78 of the ~125 out-of-school children and misses ~47, at the lowest expected cost of the three
-  policies. The default 0.5 cut-off on the same tree would catch only ~5 per 1,000 - unusable for outreach. Logistic
-  regression at ~0.57 is a close second and is preferable where officials need to explain *why* a child was flagged.
+  third of all children and catches 55-60% of those out of school on unseen districts. At r = 10 the models flag over
+  half of all children to catch 75-83%.
+- **Recommendation for deployment (r = 5).** Decision tree at threshold 0.16 (chosen on training OOF): per 1,000
+  children screened on the hold-out it flags ~328, catches ~78 of the ~125 out-of-school children and misses ~47, at the
+  lowest hold-out expected cost of the three policies. The default 0.5 cut-off on the same tree would catch only ~5 per
+  1,000 - unusable for outreach. Logistic regression at 0.54 is a close second (recall ~0.57, precision ~0.20) and is
+  preferable where officials need to explain *why* a child was flagged.
+- **Honesty check.** Had the threshold been picked on the hold-out itself, the logistic optimum would have been 0.57
+  (cost ~545 per 1,000 vs ~552 at the training-selected 0.54); for the tree the two coincide at 0.16. The flattery from
+  selecting on the test set would have been small here (~1% of cost) but not zero - which is why every number at the
+  recommended threshold below uses the training-selected value.
 - Which error is "better" to make depends on budget: a programme that can afford to visit a third of households
   should accept the false positives; one that cannot should raise the threshold and accept more missed children,
   explicitly.
@@ -267,12 +307,12 @@ print("Milestone 2 subgroup sample sizes (population):"); display(load_subgroup_
 
 md("""
 **Systematic weaknesses.** The children the model misses look like *enrolled* children on paper: they are older,
-more often urban (43% vs 14% of true positives), more often B-form registered, and come from households with more
+more often urban (44% vs 15% of true positives), more often B-form registered, and come from households with more
 assets, more digital use and better housing. In other words the model has learned "poor rural household => out of
 school" and under-detects **out-of-school children in better-off or urban households** - plausibly dropouts rather
 than never-enrolled children, a distinction the current features cannot see. Recall is far higher in Balochistan
-(~0.9, where prevalence is 26%) than in Punjab or Sindh (~0.25-0.35): the model leans on the province prior. Urban
-children have recall ~0.26 versus ~0.61 for rural children. Islamabad Capital Territory contains a single district and
+(~0.92, where prevalence is 26%) than in Sindh (~0.29) or Punjab (~0.42): the model leans on the province prior. Urban
+children have recall ~0.31 versus ~0.67 for rural children. Islamabad Capital Territory contains a single district and
 fell entirely into the training side of the grouped split, so it has no hold-out estimate at all - and with 52
 positives in the whole dataset it is too small for any reliable subgroup conclusion.
 
@@ -326,20 +366,38 @@ md("""
 Controls: Balochistan residence raises the odds ~1.8x even after the household variables; age has a small negative
 coefficient within the 5-16 window.
 
+*Why two importance views disagree on Balochistan.* It has the largest positive standardised coefficient in the
+logistic model but near-zero permutation importance on the hold-out (and Sindh's permutation importance is slightly
+negative). The province dummies overlap heavily with housing quality and digital access - kachha, disconnected
+households are concentrated in Balochistan - so shuffling a province flag costs little once the household variables
+remain. The coefficient measures the province's *conditional association*; the permutation drop measures its *unique*
+contribution to ranking children in new districts. They disagree because the information is shared, not because one
+is wrong.
+
 ## 9. Initial policy takeaways
+
+**A caveat first: these are associations, not causal effects.** ASER is a single cross-sectional survey, and every
+driver above is a conditional association. The B-form result is the clearest example: children without a registration
+are more likely to be out of school, but households that are more engaged with public services may obtain *both* the
+document and a school place for reasons unrelated to the document itself - in which case issuing B-forms alone would not
+move enrolment. The same logic applies to housing, digital access and disability. The takeaways therefore say where and
+for whom risk concentrates (what a targeting model can legitimately inform) and name *candidate* levers whose causal
+effect would have to be established - e.g. through a piloted or staggered roll-out - before being relied on as policy.
 
 1. **Target by housing and connectivity, not just an asset count.** Housing quality and digital access are the strongest
    household predictors; outreach lists built from a simple asset score will miss children in kachha, disconnected homes.
-2. **Birth registration is an actionable lever.** Unregistered children have ~1.3x the odds of being out of school.
-   Linking NADRA B-form drives to school enrolment campaigns targets a population the model identifies as high-risk.
+2. **Birth registration is a candidate lever and a targeting marker.** Unregistered children have ~1.3x the odds of
+   being out of school. At minimum, NADRA records identify a population the model flags as high-risk; a joint
+   registration-plus-enrolment drive is a testable intervention, not a proven one.
 3. **Disability inclusion is a first-order gap (SDG 4.5).** Children with a functional difficulty have ~1.9x the odds;
    screening and inclusive-school capacity should be part of any enrolment drive.
 4. **The gender gap is rural.** Girl-focused interventions (stipends, transport, female teachers) should be prioritised
    in rural areas, where the predicted penalty is almost three times the urban one.
 5. **Balochistan needs a province-level response.** Even after household factors, residence there nearly doubles the
    odds; the model's high recall there reflects a prior, not fine-grained targeting.
-6. **Set the operating threshold explicitly.** At a 5:1 cost ratio the recommended policy flags ~1 in 3 children and
-   catches ~60% of out-of-school children; the default 0.5 threshold is not a defensible choice for outreach.
+6. **Set the operating threshold explicitly, and choose it on training data.** At a 5:1 cost ratio the recommended
+   policy flags ~1 in 3 children and catches ~62% of out-of-school children on unseen districts; the default 0.5
+   threshold is not a defensible choice for outreach.
 
 ## 10. Limitations and roadmap for Milestone 04
 
@@ -351,9 +409,13 @@ coefficient within the 5-16 window.
   recall levels.
 - *District heterogeneity.* CV standard deviation ~0.05 AUC across district groups; the hold-out fold is harder than the
   CV average.
-- *Potential demographic bias.* Recall differs sharply by area (urban 0.26 vs rural 0.61), by province (Balochistan 0.9 vs
-  Sindh 0.24) and by B-form status; girls and disabled children are currently caught *more* often than their counterparts
+- *Potential demographic bias.* Recall differs sharply by area (urban 0.31 vs rural 0.67), by province (Balochistan 0.92 vs
+  Sindh 0.29) and by B-form status; girls and disabled children are currently caught *more* often than their counterparts
   because they carry higher predicted risk.
+- *Associational evidence only.* The drivers are conditional associations in one cross-sectional survey; no policy lever
+  has an estimated causal effect (section 9).
+- *Thin inference for H5.* The paired t-test rests on five folds; the district-cluster bootstrap of the hold-out gain is the
+  sturdier statement, and both agree.
 
 **Plan for Milestone 04.**
 1. *Fairness audit* using the subgroup frame in `subgroup_counts.csv`: equalised recall / precision / FNR for girls vs

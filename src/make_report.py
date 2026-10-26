@@ -76,6 +76,8 @@ def main():
     split = {r["partition"]: r for r in R["split"]}
     ds = R["dataset"]
     tree_rec = tc[("tree", "recommended")]; lr_rec = tc[("logreg", "recommended")]
+    bs = h5["holdout_bootstrap"]; w05 = R["holdout_05_weighted"]
+    ct = {(r["model"], r["cost_ratio_fn_to_fp"]): r for r in R["cost_thresholds"]}
     tree_05 = tc[("tree", "0.50 (default)")]; lr_05 = tc[("logreg", "0.50 (default)")]
 
     doc = Document()
@@ -127,7 +129,7 @@ def main():
                                         "cv_recall_mean", "cv_f1_mean", "cv_accuracy_mean"]]
     cvdf["model"] = cvdf["model"].map(NAMES)
     cvdf.columns = ["Model", "Best parameters", "CV ROC-AUC", "SD", "CV PR-AUC", "CV recall", "CV F1", "CV accuracy"]
-    add_table(doc, cvdf, caption="Table 2. Inner cross-validation results of the tuned configurations (mean over 5 district-grouped folds)")
+    add_table(doc, cvdf, caption="Table 2. Inner cross-validation results of the tuned configurations (mean over 5 district-grouped folds; recall, F1 and accuracy are at the default 0.5 threshold, ROC-AUC and PR-AUC are threshold-free)")
     lrp, trp = R["best_params"]["logreg"], R["best_params"]["tree"]
     doc.add_paragraph(
         f"Hyperparameter exploration. The logistic grid covered C in {{0.001, 0.01, 0.1, 1, 10}} x class_weight in {{none, balanced}}; "
@@ -137,15 +139,21 @@ def main():
         f"class_weight; the best point was depth {trp['max_depth']}, minimum leaf {trp['min_samples_leaf']}, no class weights "
         f"(CV ROC-AUC {cvb['tree']['cv_roc_auc_mean']:.3f} +/- {cvb['tree']['cv_roc_auc_sd']:.3f}; fitted tree depth "
         f"{R['tree_shape']['depth']}, {R['tree_shape']['leaves']} leaves). Unconstrained trees over-fit district idiosyncrasies and "
-        f"lose AUC on unseen districts. Full grids: outputs/tables/t02-t04.")
+        f"lose AUC on unseen districts. Because refitting is on ROC-AUC, a threshold-free criterion, the selected tree carries no class "
+        f"weighting and at the default 0.5 cut-off flags almost nobody (recall {h05['tree']['recall']:.1%} on the hold-out, Table 3): "
+        f"almost no leaf reaches a 50% out-of-school share. That is not a defect of the tree; it is why the operating threshold is set "
+        f"separately, and without looking at the hold-out, in section 5. Full grids: outputs/tables/t02-t04.")
 
     doc.add_heading("3.1 Hypothesis H5 - value of the household features", 2)
     doc.add_paragraph(
         f"On identical inner folds, a logistic model using only age, sex and area reached ROC-AUC {h5['auc_demo_mean']:.3f} "
         f"(+/- {h5['auc_demo_sd']:.3f}) against {h5['auc_full_mean']:.3f} (+/- {h5['auc_full_sd']:.3f}) for the 13-feature model: a "
         f"gain of {h5['gain_mean']:+.3f} AUC in every fold (paired t = {h5['paired_t']:.2f}, p = {h5['p_value']:.3f}). On the hold-out "
-        f"districts the AUCs were {h5['holdout_auc_demo']:.3f} and {h5['holdout_auc_full']:.3f}. H0 for H5 is rejected: who is out of "
-        f"school is explained far better by household circumstances than by demographics alone.")
+        f"districts the AUCs were {h5['holdout_auc_demo']:.3f} and {h5['holdout_auc_full']:.3f}. Five folds are a thin basis for a t-test, so "
+        f"the hold-out gain was also bootstrapped by resampling the {bs['n_clusters']} held-out districts with replacement "
+        f"({bs['n_boot']:,} draws): gain {bs['diff_point']:+.3f} AUC, 95% interval [{bs['ci_low']:+.3f}, {bs['ci_high']:+.3f}], positive in "
+        f"{bs['share_positive']:.0%} of draws. H0 for H5 is rejected: who is out of school is explained far better by household circumstances "
+        f"than by demographics alone.")
     add_fig(doc, "h5", "Figure 1. Per-fold ROC-AUC of the demographic and full logistic models (district-grouped CV).", 4.8)
 
     # ---------------------------------------------------------------- 4
@@ -160,8 +168,13 @@ def main():
         f"cut-off (ROC-AUC {h05['logreg']['roc_auc']:.3f}, PR-AUC {h05['logreg']['pr_auc']:.3f}). The decision tree ranks children better "
         f"(ROC-AUC {h05['tree']['roc_auc']:.3f}, PR-AUC {h05['tree']['pr_auc']:.3f}) but, tuned without class weights, almost no leaf "
         f"exceeds a 50% out-of-school share, so its default-threshold recall is only {h05['tree']['recall']:.1%}. The threshold, not the "
-        f"learner, decides who is flagged. Survey-weighted metrics are close to the unweighted ones. Hold-out AUCs sit 0.03-0.06 below "
-        f"the CV means: the held-out districts are a harder group, within the fold-to-fold spread observed in CV.")
+        f"learner, decides who is flagged. Applying the ASER sampling weights changes the picture in different directions for different "
+        f"models: ROC-AUC rises from {h05['logreg']['roc_auc']:.3f} to {w05['logreg']['roc_auc']:.3f} for the full logistic model and from "
+        f"{h05['tree']['roc_auc']:.3f} to {w05['tree']['roc_auc']:.3f} for the tree, but falls from {h05['logreg_demo']['roc_auc']:.3f} to "
+        f"{w05['logreg_demo']['roc_auc']:.3f} for the demographic-only model. The weights up-weight households that the sample "
+        f"under-represents - predominantly poorer, rural ones - where the household features carry most of their signal and where age, "
+        f"sex and area alone separate least; population-level claims should therefore quote the weighted figures. Hold-out AUCs sit "
+        f"0.03-0.06 below the CV means: the held-out districts are a harder group, within the fold-to-fold spread observed in CV.")
     add_fig(doc, "roc_pr", "Figure 2. ROC and precision-recall curves on the held-out districts.")
     add_fig(doc, "cm_05", "Figure 3. Confusion matrices at the default 0.5 threshold (counts; row % of each true class).")
 
@@ -172,12 +185,21 @@ def main():
         "intervention is never visited - the costly error for an education-access programme. A false positive (model says 'out of "
         "school', child is enrolled) spends an outreach visit or a stipend slot on a child who did not need it - wasteful but "
         "recoverable. We quantify this by pricing a false negative at r false positives (r = 1, 3, 5, 10), sweeping the threshold "
-        "from 0.05 to 0.95 and computing the expected cost per 1,000 children screened.")
+        "from 0.05 to 0.95 and computing the expected cost per 1,000 children screened. The operating threshold is a model setting, so "
+        "it is chosen without touching the hold-out: each tuned pipeline is re-fitted on the five district-grouped training folds, "
+        "out-of-fold probabilities are collected for every training child, the cost curve is swept on those, and the cost-minimising "
+        "threshold is then applied once to the hold-out districts. Table 4 reports both the training out-of-fold metrics that drove the "
+        "choice and the hold-out metrics at that threshold; its last two columns show what the hold-out's own optimum would have been, "
+        "to make visible how much selecting the threshold on the test set would have flattered the result.")
     bt = pd.read_csv(T / "t09_cost_minimising_thresholds.csv")
     bt["model"] = bt["model"].map(NAMES)
-    bt.columns = ["Model", "FN:FP cost", "Threshold", "Recall", "Precision", "Specificity", "F1", "Flagged share", "Cost / 1,000"]
-    add_table(doc, bt, caption="Table 4. Cost-minimising threshold for each cost ratio")
-    add_fig(doc, "threshold", f"Figure 4. Recall/precision and expected cost versus threshold (cost ratio {ratio}:1).")
+    bt = bt[["model", "cost_ratio_fn_to_fp", "threshold", "oof_recall", "oof_precision", "oof_cost_per_1000",
+             "holdout_recall", "holdout_precision", "holdout_flagged_rate", "holdout_cost_per_1000", "holdout_oracle_threshold", "holdout_oracle_cost_per_1000"]]
+    bt.columns = ["Model", "FN:FP", "Threshold (chosen on train OOF)", "OOF recall", "OOF precision", "OOF cost/1,000",
+                  "Hold-out recall", "Hold-out precision", "Hold-out flagged", "Hold-out cost/1,000", "Hold-out oracle thr.", "Oracle cost/1,000"]
+    add_table(doc, bt, caption="Table 4. Cost-minimising threshold per cost ratio: chosen on training out-of-fold predictions, then evaluated once on the hold-out", font=7.5)
+    add_fig(doc, "threshold", f"Figure 4. Recall/precision and expected cost versus threshold (cost ratio {ratio}:1). Solid curves are training "
+            "out-of-fold predictions (used for selection); dashed curves are the hold-out (reported only); dash-dot lines mark the chosen thresholds.")
     cmp_ = pd.read_csv(T / "t10_confusion_default_vs_recommended.csv")
     cmp_ = cmp_[["model", "threshold_label", "threshold", "tp", "fn", "fp", "tn", "recall", "precision", "specificity",
                  "flagged_per_1000", "caught_per_1000", "missed_per_1000", f"cost_per_1000_ratio{ratio}"]]
@@ -192,13 +214,19 @@ def main():
         f"At r = {ratio} the optimum moves to a low threshold. Recommended deployment: the decision tree at threshold {rec['tree']:.2f} - per "
         f"1,000 children screened it flags {tree_rec['flagged_per_1000']:.0f}, catches {tree_rec['caught_per_1000']:.0f} of the "
         f"{tree_rec['caught_per_1000'] + tree_rec['missed_per_1000']:.0f} out-of-school children and misses {tree_rec['missed_per_1000']:.0f} "
-        f"(recall {tree_rec['recall']:.2f}, precision {tree_rec['precision']:.2f}), the lowest expected cost of all policies. The default "
+        f"(recall {tree_rec['recall']:.2f}, precision {tree_rec['precision']:.2f}), the lowest hold-out expected cost of all policies. The default "
         f"0.5 threshold on the same tree would catch only {tree_05['caught_per_1000']:.0f} per 1,000.",
         f"Logistic regression at threshold {rec['logreg']:.2f} is a close second (recall {lr_rec['recall']:.2f}, precision "
         f"{lr_rec['precision']:.2f}, {lr_rec['flagged_per_1000']:.0f} flagged per 1,000) and is preferable where officials must explain why "
         "a child was flagged.",
-        "At r = 10 both models flag over half of all children to catch ~78%; whether that is acceptable is a budget decision for the "
-        "programme, which the cost ratio makes explicit.",
+        f"At r = 10 both models flag over half of all children to catch {ct[('logreg',10)]['holdout_recall']:.0%}-{ct[('tree',10)]['holdout_recall']:.0%}; "
+        "whether that is acceptable is a budget decision for the programme, which the cost ratio makes explicit.",
+        f"Honesty check. Had the threshold been picked on the hold-out itself, the logistic optimum would have been "
+        f"{ct[('logreg',ratio)]['holdout_oracle_threshold']:.2f} with cost {ct[('logreg',ratio)]['holdout_oracle_cost_per_1000']:.0f} per 1,000 against "
+        f"{ct[('logreg',ratio)]['holdout_cost_per_1000']:.0f} at the training-selected {rec['logreg']:.2f}; for the tree the two coincide at "
+        f"{rec['tree']:.2f}. The flattery from selecting on the test set is small here (about "
+        f"{(ct[('logreg',ratio)]['holdout_cost_per_1000']/ct[('logreg',ratio)]['holdout_oracle_cost_per_1000']-1):.1%} of cost for the logistic model) but it is "
+        "not zero, which is why all numbers at the recommended threshold - Tables 5-7, Figures 5-6 - use the training-selected value.",
     ])
 
     doc.add_heading("5.1 Misclassified edge cases", 2)
@@ -257,23 +285,38 @@ def main():
         f"H5 Feature value: +{h5['gain_mean']:.3f} AUC in cross-validation (every fold, p = {h5['p_value']:.3f}) and "
         f"+{h5['holdout_auc_full'] - h5['holdout_auc_demo']:.3f} on hold-out. H0 rejected.",
         f"Controls: Balochistan residence raises the odds {ors['province_Balochistan']['odds_ratio']:.2f}x even after the household variables; "
-        "age has a small negative coefficient within the 5-16 window; the ICT dummy is not significant (807 children).",
+        "age has a small negative coefficient within the 5-16 window; the ICT dummy is not significant (807 children). Note that Balochistan "
+        "has the largest positive standardised coefficient in the logistic model yet close to zero permutation importance on the hold-out "
+        "(Table 9), and Sindh's permutation importance is slightly negative. The province dummies overlap heavily with housing quality and "
+        "digital access (kachha, disconnected households are concentrated in Balochistan), so shuffling a province flag costs little once the "
+        "household variables remain; the coefficient measures the province's conditional association, the permutation drop its unique "
+        "contribution to ranking children in new districts. The two views disagree because the information is shared, not because one is wrong.",
     ])
 
     # ---------------------------------------------------------------- 7
     doc.add_heading("7. Initial policy takeaways", 1)
+    doc.add_paragraph(
+        "A caveat before the recommendations. ASER is a single cross-sectional household survey, and every driver above is an association "
+        "conditional on the other twelve features, not an estimated causal effect. The B-form result is the clearest example: children "
+        "without a registration are more likely to be out of school, but households that are more engaged with public services may obtain "
+        "both the document and a school place for reasons unrelated to the document itself, in which case issuing B-forms alone would not "
+        "move enrolment. The same reasoning applies to housing, digital access and disability. The takeaways below therefore identify where "
+        "and for whom out-of-school risk concentrates - which is what a targeting model can legitimately inform - and name candidate levers "
+        "whose causal effect would need to be established (for instance through a piloted or staggered roll-out) before being relied on as policy.")
     bullets(doc, [
         "Target by housing and connectivity, not just an asset count. Housing quality and digital access are the strongest household "
-        "predictors; outreach lists built from a simple asset score will miss children in kachha, disconnected homes.",
-        "Birth registration is an actionable lever. Unregistered children have about 1.3x the odds of being out of school; linking NADRA "
-        "B-form drives to enrolment campaigns targets a population the model identifies as high-risk.",
+        "predictors of out-of-school status; outreach lists built from a simple asset score will miss children in kachha, disconnected homes.",
+        "Birth registration is a candidate lever and a targeting marker. Unregistered children have about 1.3x the odds of being out of "
+        "school; at minimum, NADRA B-form records identify a population the model flags as high-risk, and a joint registration-plus-enrolment "
+        "drive is a testable intervention.",
         "Disability inclusion is a first-order gap (SDG 4.5). Children with a functional difficulty have about 1.9x the odds; screening and "
         "inclusive-school capacity belong in any enrolment drive.",
         "The gender gap is rural. Girl-focused interventions should be prioritised in rural areas, where the predicted penalty is almost "
         "three times the urban one.",
         "Balochistan needs a province-level response: residence there nearly doubles the odds after household factors are accounted for.",
-        f"Set the operating threshold explicitly. At a {ratio}:1 cost ratio the recommended policy flags about one child in three and catches "
-        "about 60% of out-of-school children; the default 0.5 threshold is not a defensible choice for outreach.",
+        f"Set the operating threshold explicitly and choose it on training data. At a {ratio}:1 cost ratio the recommended policy flags about "
+        f"{tree_rec['flagged_rate']:.0%} of children and catches {tree_rec['recall']:.0%} of out-of-school children on unseen districts; the default "
+        "0.5 threshold is not a defensible choice for outreach.",
     ])
 
     # ---------------------------------------------------------------- 8
@@ -287,6 +330,10 @@ def main():
         "District heterogeneity: CV standard deviation of about 0.05 AUC between district groups; the hold-out fold is harder than the CV average.",
         "Potential demographic bias: recall differs sharply by area, province and B-form status. Girls and disabled children are currently "
         "caught more often than their counterparts because they carry higher predicted risk, which is itself a fairness question.",
+        "Associational evidence only: the drivers are conditional associations in one cross-sectional survey; none of the policy levers has an "
+        "estimated causal effect (section 7).",
+        "The H5 paired t-test rests on five folds; the district-cluster bootstrap of the hold-out gain (section 3.1) is the sturdier statement, "
+        "and both agree.",
     ])
     doc.add_paragraph("Plan for Milestone 04.")
     bullets(doc, [

@@ -128,3 +128,26 @@ def subgroup_metrics(df_test: pd.DataFrame, y, proba, threshold: float, grouping
                 "flag_small": pos < 100,
             })
     return pd.DataFrame(rows)
+
+
+def cluster_bootstrap_auc_diff(y, proba_a, proba_b, clusters, n_boot: int = 1000, seed: int = 42) -> dict:
+    """District-cluster bootstrap of AUC(b) - AUC(a) on the hold-out.
+
+    Districts (not children) are resampled with replacement so the interval respects the clustered design.
+    """
+    rng = np.random.default_rng(seed)
+    y = np.asarray(y); pa = np.asarray(proba_a); pb = np.asarray(proba_b); cl = np.asarray(clusters)
+    uniq = np.unique(cl)
+    idx_by = {c: np.flatnonzero(cl == c) for c in uniq}
+    diffs = []
+    while len(diffs) < n_boot:
+        pick = rng.choice(uniq, size=len(uniq), replace=True)
+        idx = np.concatenate([idx_by[c] for c in pick])
+        yy = y[idx]
+        if yy.min() == yy.max():
+            continue
+        diffs.append(roc_auc_score(yy, pb[idx]) - roc_auc_score(yy, pa[idx]))
+    diffs = np.array(diffs)
+    return {"diff_point": float(roc_auc_score(y, pb) - roc_auc_score(y, pa)),
+            "ci_low": float(np.percentile(diffs, 2.5)), "ci_high": float(np.percentile(diffs, 97.5)),
+            "share_positive": float((diffs > 0).mean()), "n_boot": int(n_boot), "n_clusters": int(len(uniq))}

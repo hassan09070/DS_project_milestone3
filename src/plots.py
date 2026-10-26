@@ -60,19 +60,25 @@ def confusion_heatmaps(cms: dict, names: dict, suffix: str = "") -> str:
     return _save(fig, f"fig2_confusion_matrices{suffix}")
 
 
-def threshold_curves(sweeps: dict, names: dict, ratio: int) -> str:
+def threshold_curves(sweeps_oof: dict, sweeps_holdout: dict, chosen: dict, names: dict, ratio: int) -> str:
+    """Left: recall/precision vs threshold on out-of-fold TRAINING predictions (used to choose the threshold).
+    Right: expected cost on OOF (solid, used for selection) and on the untouched hold-out (dashed, reported only)."""
     fig, axes = plt.subplots(1, 2, figsize=(13, 5.2))
-    for key, sw in sweeps.items():
+    for key, sw in sweeps_oof.items():
         axes[0].plot(sw.threshold, sw.recall, color=PALETTE.get(key), label=f"{names[key]} recall")
         axes[0].plot(sw.threshold, sw.precision, color=PALETTE.get(key), ls=":", label=f"{names[key]} precision")
-        axes[1].plot(sw.threshold, sw[f"cost_per_1000_ratio{ratio}"], color=PALETTE.get(key), label=names[key])
+        axes[1].plot(sw.threshold, sw[f"cost_per_1000_ratio{ratio}"], color=PALETTE.get(key), label=f"{names[key]} - training OOF (selection)")
+        axes[1].plot(sweeps_holdout[key].threshold, sweeps_holdout[key][f"cost_per_1000_ratio{ratio}"], color=PALETTE.get(key), ls="--", lw=1.2,
+                     label=f"{names[key]} - hold-out (not used)")
+        for ax in axes:
+            ax.axvline(chosen[key], color=PALETTE.get(key), lw=1, ls="-.")
     axes[0].axvline(0.5, color="k", lw=1, ls="--")
     axes[0].set(xlabel="Classification threshold on P(out of school)", ylabel="Metric value",
-                title="Recall and precision versus threshold")
+                title="Recall and precision vs threshold (training out-of-fold)")
     axes[1].axvline(0.5, color="k", lw=1, ls="--")
     axes[1].set(xlabel="Classification threshold on P(out of school)", ylabel=f"Expected cost per 1,000 children\n(1 FN = {ratio} FP)",
-                title=f"Expected misclassification cost (FN:FP = {ratio}:1)")
-    axes[0].legend(fontsize=8); axes[1].legend(fontsize=9)
+                title=f"Expected cost (FN:FP = {ratio}:1); dash-dot = chosen threshold")
+    axes[0].legend(fontsize=8); axes[1].legend(fontsize=8)
     return _save(fig, "fig3_threshold_cost_curves")
 
 
