@@ -79,6 +79,24 @@
       "cv_balanced_accuracy_sd": 0.01264836538880102
     },
     {
+      "model": "rf",
+      "best_params": "{\"class_weight\": null, \"max_depth\": 12, \"min_samples_leaf\": 20}",
+      "cv_roc_auc_mean": 0.7549467788122036,
+      "cv_roc_auc_sd": 0.04495950706349402,
+      "cv_average_precision_mean": 0.2888118814045922,
+      "cv_average_precision_sd": 0.07751058404621282,
+      "cv_recall_mean": 0.024296299312633836,
+      "cv_recall_sd": 0.017634871396109607,
+      "cv_precision_mean": 0.30383228823906794,
+      "cv_precision_sd": 0.05917286890443433,
+      "cv_f1_mean": 0.043813585513559246,
+      "cv_f1_sd": 0.030365438714642444,
+      "cv_accuracy_mean": 0.8623955428616646,
+      "cv_accuracy_sd": 0.010862189754791378,
+      "cv_balanced_accuracy_mean": 0.5079367565492475,
+      "cv_balanced_accuracy_sd": 0.006286984102060254
+    },
+    {
       "model": "logreg_demo",
       "best_params": "{\"C\": 0.001, \"class_weight\": \"balanced\"}",
       "cv_roc_auc_mean": 0.5856159446522142,
@@ -131,6 +149,11 @@
       "class_weight": null,
       "max_depth": 10,
       "min_samples_leaf": 200
+    },
+    "rf": {
+      "class_weight": null,
+      "max_depth": 12,
+      "min_samples_leaf": 20
     }
   },
   "tree_shape": {
@@ -213,6 +236,25 @@
       "flagged_rate": 0.019006027801697627,
       "roc_auc": 0.7112117328669094,
       "pr_auc": 0.23573268708836673
+    },
+    "rf": {
+      "model_name": "Random forest",
+      "weighted": false,
+      "threshold": 0.5,
+      "tn": 28259.0,
+      "fp": 189.0,
+      "fn": 3920.0,
+      "tp": 148.0,
+      "accuracy": 0.8736314429819166,
+      "precision": 0.4391691394658754,
+      "recall": 0.03638151425762045,
+      "specificity": 0.9933562992125984,
+      "f1": 0.06719636776390465,
+      "npv": 0.8781814226669568,
+      "balanced_accuracy": 0.5148689067351094,
+      "flagged_rate": 0.010364128429081068,
+      "roc_auc": 0.7247142840206368,
+      "pr_auc": 0.2537132176953716
     }
   },
   "holdout_05_weighted": {
@@ -291,6 +333,25 @@
       "flagged_rate": 0.011542724757035173,
       "roc_auc": 0.7486481787115036,
       "pr_auc": 0.307871235260658
+    },
+    "rf": {
+      "model_name": "Random forest",
+      "weighted": true,
+      "threshold": 0.5,
+      "tn": 9381200.355986277,
+      "fp": 57054.942039010966,
+      "fn": 1597031.2544761095,
+      "tp": 50538.360346682035,
+      "accuracy": 0.8507926825907116,
+      "precision": 0.46971660155495204,
+      "recall": 0.03067449162208409,
+      "specificity": 0.9939549270243889,
+      "f1": 0.05758822711120316,
+      "npv": 0.854527458415605,
+      "balanced_accuracy": 0.5123147093232365,
+      "flagged_rate": 0.009705484547297529,
+      "roc_auc": 0.7550114110095509,
+      "pr_auc": 0.31964455940919395
     }
   },
   "cost_thresholds": [
@@ -437,14 +498,93 @@
       "holdout_cost_per_1000": 673.5453315290933,
       "holdout_oracle_threshold": 0.09,
       "holdout_oracle_cost_per_1000": 669.8548406938123
+    },
+    {
+      "model": "rf",
+      "cost_ratio_fn_to_fp": 1,
+      "threshold": 0.87,
+      "oof_recall": 0.00017421602787456446,
+      "oof_precision": 0.6,
+      "oof_specificity": 0.9999821535331542,
+      "oof_f1": 0.00034833091436865023,
+      "oof_flagged_rate": 3.8673648549351444e-05,
+      "oof_cost_per_1000": 133.1843108742565,
+      "holdout_recall": 0.0,
+      "holdout_precision": NaN,
+      "holdout_specificity": 1.0,
+      "holdout_flagged_rate": 0.0,
+      "holdout_cost_per_1000": 125.10763931602904,
+      "holdout_oracle_threshold": 0.73,
+      "holdout_oracle_cost_per_1000": 125.10763931602904
+    },
+    {
+      "model": "rf",
+      "cost_ratio_fn_to_fp": 3,
+      "threshold": 0.18,
+      "oof_recall": 0.5721254355400697,
+      "oof_precision": 0.2930049964311206,
+      "oof_specificity": 0.7878768950716982,
+      "oof_f1": 0.38753835260797737,
+      "oof_flagged_rate": 0.2600725517646786,
+      "oof_cost_per_1000": 354.83846017000934,
+      "holdout_recall": 0.5609636184857424,
+      "holdout_precision": 0.2513769552764926,
+      "holdout_specificity": 0.7611079865016873,
+      "holdout_flagged_rate": 0.2791856316890146,
+      "holdout_cost_per_1000": 373.7852134333866,
+      "holdout_oracle_threshold": 0.28,
+      "holdout_oracle_cost_per_1000": 349.7047607331775
+    },
+    {
+      "model": "rf",
+      "cost_ratio_fn_to_fp": 5,
+      "threshold": 0.13,
+      "oof_recall": 0.7216608594657375,
+      "oof_precision": 0.25839519264757865,
+      "oof_specificity": 0.6817439567401644,
+      "oof_f1": 0.3805367997182797,
+      "oof_flagged_rate": 0.3719863559367918,
+      "oof_cost_per_1000": 461.2296673292752,
+      "holdout_recall": 0.7087020648967551,
+      "holdout_precision": 0.22022763730807424,
+      "holdout_specificity": 0.641169853768279,
+      "holdout_flagged_rate": 0.4026017960388732,
+      "holdout_cost_per_1000": 496.15573871324887,
+      "holdout_oracle_threshold": 0.18,
+      "holdout_oracle_cost_per_1000": 483.63882396358713
+    },
+    {
+      "model": "rf",
+      "cost_ratio_fn_to_fp": 10,
+      "threshold": 0.08,
+      "oof_recall": 0.8573751451800232,
+      "oof_precision": 0.21445898638932062,
+      "oof_specificity": 0.517440459724986,
+      "oof_f1": 0.3430974983442362,
+      "oof_flagged_rate": 0.5324819974166003,
+      "oof_cost_per_1000": 608.2514096544896,
+      "holdout_recall": 0.8527531956735497,
+      "holdout_precision": 0.18208062145706488,
+      "holdout_specificity": 0.45222862767154104,
+      "holdout_flagged_rate": 0.5859269282814614,
+      "holdout_cost_per_1000": 663.4579899126584,
+      "holdout_oracle_threshold": 0.09,
+      "holdout_oracle_cost_per_1000": 658.3835650141468
     }
   ],
   "recommended_threshold": {
     "logreg": 0.54,
-    "tree": 0.16
+    "tree": 0.16,
+    "rf": 0.13
   },
   "recommended_cost_ratio": 5,
   "threshold_selection": "cost-minimising threshold chosen on district-grouped out-of-fold training predictions; hold-out touched once",
+  "recommended_model": "tree",
+  "model_rank_by_holdout_cost": {
+    "tree": 487.33,
+    "rf": 496.16,
+    "logreg": 552.28
+  },
   "threshold_comparison": [
     {
       "model": "naive",
@@ -575,6 +715,58 @@
       "cost_per_1000_ratio3": 392.42219215155615,
       "cost_per_1000_ratio5": 487.32931479886827,
       "cost_per_1000_ratio10": 724.5971214171485
+    },
+    {
+      "model": "rf",
+      "threshold_label": "0.50 (default)",
+      "threshold": 0.5,
+      "tn": 28259.0,
+      "fp": 189.0,
+      "fn": 3920.0,
+      "tp": 148.0,
+      "accuracy": 0.8736314429819166,
+      "precision": 0.4391691394658754,
+      "recall": 0.03638151425762045,
+      "specificity": 0.9933562992125984,
+      "f1": 0.06719636776390465,
+      "npv": 0.8781814226669568,
+      "balanced_accuracy": 0.5148689067351094,
+      "flagged_rate": 0.010364128429081068,
+      "flagged_per_1000": 10.364128429081068,
+      "caught_per_1000": 4.551605363513347,
+      "missed_per_1000": 120.55603395251569,
+      "false_alarms_per_1000": 5.812523065567721,
+      "out_of_school_per_1000": 125.10763931602904,
+      "cost_per_1000_ratio1": 126.36855701808341,
+      "cost_per_1000_ratio3": 367.48062492311476,
+      "cost_per_1000_ratio5": 608.5926928281461,
+      "cost_per_1000_ratio10": 1211.3728625907245
+    },
+    {
+      "model": "rf",
+      "threshold_label": "recommended",
+      "threshold": 0.13,
+      "tn": 18240.0,
+      "fp": 10208.0,
+      "fn": 1185.0,
+      "tp": 2883.0,
+      "accuracy": 0.6496186492803543,
+      "precision": 0.22022763730807424,
+      "recall": 0.7087020648967551,
+      "specificity": 0.641169853768279,
+      "f1": 0.3360335683897663,
+      "npv": 0.938996138996139,
+      "balanced_accuracy": 0.674935959332517,
+      "flagged_rate": 0.4026017960388732,
+      "flagged_per_1000": 402.60179603887315,
+      "caught_per_1000": 88.66404231762824,
+      "missed_per_1000": 36.443596998400785,
+      "false_alarms_per_1000": 313.9377537212449,
+      "out_of_school_per_1000": 125.10763931602904,
+      "cost_per_1000_ratio1": 350.3813507196457,
+      "cost_per_1000_ratio3": 423.2685447164473,
+      "cost_per_1000_ratio5": 496.15573871324887,
+      "cost_per_1000_ratio10": 678.3737237052528
     }
   ],
   "edge_profile": [
@@ -1036,6 +1228,176 @@
       "specificity": 0.7731530504194836,
       "f1": 0.23795521375254466,
       "roc_auc": 0.6707615573543733,
+      "flag_small": false
+    }
+  ],
+  "subgroups_rf": [
+    {
+      "variable": "female",
+      "level": 0,
+      "n": 20744,
+      "positives": 2365,
+      "prevalence": 0.11400887003470883,
+      "recall": 0.6917547568710359,
+      "fnr": 0.30824524312896406,
+      "precision": 0.21540487162606978,
+      "specificity": 0.6757712606779477,
+      "f1": 0.3285140562248996,
+      "roc_auc": 0.7356480365781932,
+      "flag_small": false
+    },
+    {
+      "variable": "female",
+      "level": 1,
+      "n": 11772,
+      "positives": 1703,
+      "prevalence": 0.1446653075093442,
+      "recall": 0.7322372284204345,
+      "fnr": 0.2677627715795655,
+      "precision": 0.22689228529839883,
+      "specificity": 0.5780117191379481,
+      "f1": 0.34643700513960274,
+      "roc_auc": 0.702454969110087,
+      "flag_small": false
+    },
+    {
+      "variable": "urban",
+      "level": 0,
+      "n": 22350,
+      "positives": 2932,
+      "prevalence": 0.13118568232662192,
+      "recall": 0.7636425648021828,
+      "fnr": 0.23635743519781716,
+      "precision": 0.21720993403181996,
+      "specificity": 0.5844577196415697,
+      "f1": 0.33821752265861027,
+      "roc_auc": 0.7250748574092729,
+      "flag_small": false
+    },
+    {
+      "variable": "urban",
+      "level": 1,
+      "n": 10166,
+      "positives": 1136,
+      "prevalence": 0.11174503246114499,
+      "recall": 0.5669014084507042,
+      "fnr": 0.43309859154929575,
+      "precision": 0.23140495867768596,
+      "specificity": 0.7631229235880399,
+      "f1": 0.32865526920132687,
+      "roc_auc": 0.7219660014349665,
+      "flag_small": false
+    },
+    {
+      "variable": "any_disability",
+      "level": 0,
+      "n": 28884,
+      "positives": 3662,
+      "prevalence": 0.1267829940451461,
+      "recall": 0.7113599126160568,
+      "fnr": 0.2886400873839432,
+      "precision": 0.22316456780604815,
+      "specificity": 0.6404726032828483,
+      "f1": 0.33974567981741116,
+      "roc_auc": 0.7230130953787928,
+      "flag_small": false
+    },
+    {
+      "variable": "any_disability",
+      "level": 1,
+      "n": 3632,
+      "positives": 406,
+      "prevalence": 0.11178414096916299,
+      "recall": 0.6847290640394089,
+      "fnr": 0.3152709359605911,
+      "precision": 0.19605077574047955,
+      "specificity": 0.6466212027278363,
+      "f1": 0.3048245614035088,
+      "roc_auc": 0.7425283793317229,
+      "flag_small": false
+    },
+    {
+      "variable": "bform",
+      "level": 1,
+      "n": 18249,
+      "positives": 1689,
+      "prevalence": 0.09255301660364952,
+      "recall": 0.6021314387211367,
+      "fnr": 0.3978685612788633,
+      "precision": 0.18321023239056025,
+      "specificity": 0.726207729468599,
+      "f1": 0.280939226519337,
+      "roc_auc": 0.7257004687906687,
+      "flag_small": false
+    },
+    {
+      "variable": "bform",
+      "level": 0,
+      "n": 14267,
+      "positives": 2379,
+      "prevalence": 0.16674844045699866,
+      "recall": 0.7843631778058008,
+      "fnr": 0.21563682219419922,
+      "precision": 0.24748010610079577,
+      "specificity": 0.5227119784656796,
+      "f1": 0.37624760560540377,
+      "roc_auc": 0.6945615820517912,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Sindh",
+      "n": 5017,
+      "positives": 798,
+      "prevalence": 0.15905919872433724,
+      "recall": 0.5100250626566416,
+      "fnr": 0.4899749373433584,
+      "precision": 0.5055900621118012,
+      "specificity": 0.9056648494904006,
+      "f1": 0.5077978789769183,
+      "roc_auc": 0.8567225720142975,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Khyber Pakhtuknkhwa",
+      "n": 7889,
+      "positives": 1086,
+      "prevalence": 0.1376600329572823,
+      "recall": 0.7403314917127072,
+      "fnr": 0.2596685082872928,
+      "precision": 0.2637795275590551,
+      "specificity": 0.6701455240335146,
+      "f1": 0.3889695210449927,
+      "roc_auc": 0.7479498672046159,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Balochistan",
+      "n": 6223,
+      "positives": 1074,
+      "prevalence": 0.17258556966093525,
+      "recall": 0.9543761638733705,
+      "fnr": 0.04562383612662946,
+      "precision": 0.19753324339949893,
+      "specificity": 0.19129928141386676,
+      "f1": 0.32731917611368355,
+      "roc_auc": 0.6484217253228104,
+      "flag_small": false
+    },
+    {
+      "variable": "province",
+      "level": "Punjab",
+      "n": 13387,
+      "positives": 1110,
+      "prevalence": 0.0829162620452678,
+      "recall": 0.5828828828828829,
+      "fnr": 0.4171171171171171,
+      "precision": 0.15979254136823906,
+      "specificity": 0.7228964730797426,
+      "f1": 0.25082380306260904,
+      "roc_auc": 0.707275855312835,
       "flag_small": false
     }
   ],
@@ -1675,6 +2037,153 @@
       "label": "Urban"
     }
   ],
+  "gini_rf": [
+    {
+      "feature": "house",
+      "gini_importance": 0.18176,
+      "label": "Housing (1 kachha - 3 pacca)"
+    },
+    {
+      "feature": "digital_n",
+      "gini_importance": 0.16679,
+      "label": "Digital use (0-5)"
+    },
+    {
+      "feature": "assets_n",
+      "gini_importance": 0.14867,
+      "label": "Household assets (0-8)"
+    },
+    {
+      "feature": "province_Balochistan",
+      "gini_importance": 0.14546,
+      "label": "Province: Balochistan"
+    },
+    {
+      "feature": "age",
+      "gini_importance": 0.10026,
+      "label": "Age (years)"
+    },
+    {
+      "feature": "any_disability",
+      "gini_importance": 0.06687,
+      "label": "Any disability"
+    },
+    {
+      "feature": "bform",
+      "gini_importance": 0.04963,
+      "label": "B-form registered"
+    },
+    {
+      "feature": "female",
+      "gini_importance": 0.04505,
+      "label": "Female"
+    },
+    {
+      "feature": "urban",
+      "gini_importance": 0.03295,
+      "label": "Urban"
+    },
+    {
+      "feature": "province_Sindh",
+      "gini_importance": 0.0313,
+      "label": "Province: Sindh"
+    },
+    {
+      "feature": "province_Khyber Pakhtuknkhwa",
+      "gini_importance": 0.01977,
+      "label": "Province: KP"
+    },
+    {
+      "feature": "female_x_urban",
+      "gini_importance": 0.01085,
+      "label": "Female x Urban"
+    },
+    {
+      "feature": "province_Islamabad Capital Territory",
+      "gini_importance": 0.00063,
+      "label": "Province: ICT"
+    }
+  ],
+  "perm_rf": [
+    {
+      "feature": "digital_n",
+      "auc_drop_mean": 0.04926,
+      "auc_drop_std": 0.00216,
+      "label": "Digital use (0-5)"
+    },
+    {
+      "feature": "house",
+      "auc_drop_mean": 0.04087,
+      "auc_drop_std": 0.00211,
+      "label": "Housing (1 kachha - 3 pacca)"
+    },
+    {
+      "feature": "age",
+      "auc_drop_mean": 0.03156,
+      "auc_drop_std": 0.00116,
+      "label": "Age (years)"
+    },
+    {
+      "feature": "assets_n",
+      "auc_drop_mean": 0.02264,
+      "auc_drop_std": 0.0018,
+      "label": "Household assets (0-8)"
+    },
+    {
+      "feature": "female",
+      "auc_drop_mean": 0.01587,
+      "auc_drop_std": 0.0011,
+      "label": "Female"
+    },
+    {
+      "feature": "bform",
+      "auc_drop_mean": 0.01114,
+      "auc_drop_std": 0.00116,
+      "label": "B-form registered"
+    },
+    {
+      "feature": "province_Balochistan",
+      "auc_drop_mean": 0.00895,
+      "auc_drop_std": 0.00113,
+      "label": "Province: Balochistan"
+    },
+    {
+      "feature": "province_Khyber Pakhtuknkhwa",
+      "auc_drop_mean": 0.00451,
+      "auc_drop_std": 0.00046,
+      "label": "Province: KP"
+    },
+    {
+      "feature": "any_disability",
+      "auc_drop_mean": 0.00379,
+      "auc_drop_std": 0.00058,
+      "label": "Any disability"
+    },
+    {
+      "feature": "province_Sindh",
+      "auc_drop_mean": 0.00296,
+      "auc_drop_std": 0.00093,
+      "label": "Province: Sindh"
+    },
+    {
+      "feature": "province_Islamabad Capital Territory",
+      "auc_drop_mean": 0.0,
+      "auc_drop_std": 0.0,
+      "label": "Province: ICT"
+    },
+    {
+      "feature": "female_x_urban",
+      "auc_drop_mean": -0.00031,
+      "auc_drop_std": 0.00032,
+      "label": "Female x Urban"
+    },
+    {
+      "feature": "urban",
+      "auc_drop_mean": -0.00224,
+      "auc_drop_std": 0.00038,
+      "label": "Urban"
+    }
+  ],
   "h4_cells": [
     {
       "female": 0,
@@ -1717,6 +2226,7 @@
       "p_value": 1.9614665511937667e-08,
       "std_coef_rank": 8.0,
       "gini_rank": 4.0,
+      "rf_gini_rank": 3.0,
       "perm_auc_drop_logreg": 0.008628172982110615,
       "H0_rejected_at_5pct": true
     },
@@ -1730,6 +2240,7 @@
       "p_value": 2.709604164593222e-56,
       "std_coef_rank": 6.0,
       "gini_rank": 8.0,
+      "rf_gini_rank": 7.0,
       "perm_auc_drop_logreg": 0.011979647974036379,
       "H0_rejected_at_5pct": true
     },
@@ -1743,6 +2254,7 @@
       "p_value": 5.447863425146364e-170,
       "std_coef_rank": 4.0,
       "gini_rank": 6.0,
+      "rf_gini_rank": 6.0,
       "perm_auc_drop_logreg": -9.147561961284634e-05,
       "H0_rejected_at_5pct": true
     },
@@ -1756,6 +2268,7 @@
       "p_value": 6.4137301723804604e-12,
       "std_coef_rank": 7.0,
       "gini_rank": 12.0,
+      "rf_gini_rank": 12.0,
       "perm_auc_drop_logreg": -0.0015282355814483673,
       "H0_rejected_at_5pct": true
     },
@@ -1769,6 +2282,7 @@
       "p_value": 0.010309068225635296,
       "std_coef_rank": NaN,
       "gini_rank": NaN,
+      "rf_gini_rank": NaN,
       "perm_auc_drop_logreg": 0.1501018909833997,
       "H0_rejected_at_5pct": true
     }
@@ -1779,11 +2293,12 @@
     "cm_rec": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig2_confusion_matrices_recommended.png",
     "threshold": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig3_threshold_cost_curves.png",
     "importance": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig4_feature_importance.png",
+    "importance_rf": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig10_rf_importance.png",
     "odds": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig5_odds_ratios.png",
     "h5": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig6_h5_auc_by_fold.png",
     "h4": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig7_gender_area_cells.png",
     "subgroup": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig8_subgroup_recall.png",
     "tree": "/Users/hassan/Downloads/ds_project/milestone3/outputs/figures/fig9_tree_top_levels.png"
   },
-  "runtime_sec": 42.8
+  "runtime_sec": 298.2
 }

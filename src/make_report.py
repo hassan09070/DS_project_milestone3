@@ -21,8 +21,9 @@ import config as C  # noqa: E402
 
 R = json.load(open(C.OUT_DIR / "results.json"))
 T = C.TABLES_DIR
-NAMES = {"naive": "Majority-class baseline", "logreg": "Logistic regression", "tree": "Decision tree",
+NAMES = {"naive": "Majority-class baseline", "logreg": "Logistic regression", "tree": "Decision tree", "rf": "Random forest",
          "logreg_demo": "Logistic regression (age, sex, area only)"}
+MODELS = ("logreg", "tree", "rf")
 
 
 def fmt(x, nd=3):
@@ -84,7 +85,11 @@ def main():
     ds = R["dataset"]; gaps = R["h4_gaps"]
     tree_rec = tc[("tree", "recommended")]; lr_rec = tc[("logreg", "recommended")]
     tree_05 = tc[("tree", "0.50 (default)")]
-    lrp, trp = R["best_params"]["logreg"], R["best_params"]["tree"]
+    lrp, trp, rfp = R["best_params"]["logreg"], R["best_params"]["tree"], R["best_params"]["rf"]
+    best = R["recommended_model"]; best_rec = tc[(best, "recommended")]; best_05 = tc[(best, "0.50 (default)")]
+    others = [m for m in MODELS if m != best]
+    rank = R["model_rank_by_holdout_cost"]
+    top_auc = max(MODELS, key=lambda m: h05[m]["roc_auc"])
     edge = {r["feature"]: r for r in R["edge_profile"]}
     hyp_gini = {r["feature"]: r.get("gini_rank") for r in R["hypotheses"]}
 
@@ -119,7 +124,7 @@ def main():
         "with estimated values) was needed.")
 
     # ------------------------------------------------------------------ 2
-    doc.add_heading("2. The three baseline models and why they were chosen", 1)
+    doc.add_heading("2. The baseline benchmark and the three models, and why they were chosen", 1)
     bullets(doc, [
         "Majority-class baseline (a model that always predicts the most common outcome, here 'enrolled'). It sets the floor that any "
         f"real model must beat and makes the point above concrete: it scores {h05['naive']['accuracy']:.1%} accuracy (the share of all "
@@ -137,6 +142,13 @@ def main():
         "depend on other variables, such as the gender gap depending on area) without having to specify them in advance, it is easy to "
         "read, and it is quick to train on 161,000 rows. Three settings were tuned: maximum depth (how many questions deep the tree may "
         "go), minimum leaf size (the smallest group a final answer may rest on) and class weighting.",
+        "Random forest (an ensemble, meaning a model made of many models: here 200 decision trees, each grown on a random re-sample of "
+        "the children and allowed to consider only a random subset of the predictors at each split, whose votes are averaged). It was "
+        "added because a single tree is unstable (small changes in the data can change its splits) and tends to stop short of the best "
+        "possible ranking; averaging many de-correlated trees smooths both problems while keeping the same kind of importance measures. "
+        "It is a distinct learning algorithm from the single tree - bagging (training on bootstrap re-samples) plus random feature "
+        "selection - and is the natural bridge to the stronger models planned for Milestone 4. Tuned: maximum depth, minimum leaf size "
+        "and class weighting; the number of trees was fixed at 200.",
     ])
 
     # ------------------------------------------------------------------ 3
@@ -178,10 +190,14 @@ def main():
         f"default cut-off. For the decision tree a depth of {trp['max_depth']} with at least {trp['min_samples_leaf']} children per leaf and no "
         f"class weighting was best (ROC-AUC {cvb['tree']['cv_roc_auc_mean']:.3f} plus or minus {cvb['tree']['cv_roc_auc_sd']:.3f}; the fitted "
         f"tree has {R['tree_shape']['leaves']} leaves). Deeper, unconstrained trees memorised district quirks and scored worse on unseen "
-        f"districts. One consequence needs stating now: because the selection criterion was ROC-AUC, which ignores the cut-off, the chosen "
+        f"districts. For the random forest the best settings were a maximum depth of {rfp['max_depth']}, at least {rfp['min_samples_leaf']} children "
+        f"per leaf and {'no class weighting' if rfp['class_weight'] in (None, 'None') else 'balanced class weighting'} "
+        f"(ROC-AUC {cvb['rf']['cv_roc_auc_mean']:.3f} plus or minus {cvb['rf']['cv_roc_auc_sd']:.3f}), the highest cross-validated score of the three. "
+        f"One consequence needs stating now: because the selection criterion was ROC-AUC, which ignores the cut-off, the chosen "
         f"tree carries no class weighting, and at the default cut-off of 0.5 it flags almost nobody (recall {h05['tree']['recall']:.1%} on the "
         f"hold-out, Table 3) because almost no leaf contains a majority of out-of-school children. This is not a flaw in the tree. It is the "
-        f"reason the operating cut-off is chosen separately, and on training data only, in section 5. The full grids are in tables t02-t04.")
+        f"reason the operating cut-off is chosen separately, and on training data only, in section 5. The same applies to the forest wherever "
+        f"it was tuned without class weighting. The full grids are in tables t02-t04.")
 
     doc.add_heading("3.1 Hypothesis H5 - do the household features add predictive value?", 2)
     para(doc,
@@ -220,11 +236,13 @@ def main():
         f"up accuracy ({h05['logreg']['accuracy']:.1%}) to reach a recall of {h05['logreg']['recall']:.1%} at the default cut-off, with ROC-AUC "
         f"{h05['logreg']['roc_auc']:.3f} and PR-AUC {h05['logreg']['pr_auc']:.3f}. The decision tree ranks children better (ROC-AUC "
         f"{h05['tree']['roc_auc']:.3f}, PR-AUC {h05['tree']['pr_auc']:.3f}) but, as explained in section 3, its default-cut-off recall is only "
-        f"{h05['tree']['recall']:.1%}. The lesson is that the cut-off, not the choice of model, decides who gets flagged.")
+        f"{h05['tree']['recall']:.1%}. The random forest ranks children best of all (ROC-AUC {h05['rf']['roc_auc']:.3f}, PR-AUC "
+        f"{h05['rf']['pr_auc']:.3f}) with a default-cut-off recall of {h05['rf']['recall']:.1%}. The lesson is that the cut-off, not the choice of "
+        f"model, decides who gets flagged.")
     para(doc,
         f"Applying the sampling weights moves the results in different directions for different models. ROC-AUC rises from "
         f"{h05['logreg']['roc_auc']:.3f} to {w05['logreg']['roc_auc']:.3f} for the full logistic model and from {h05['tree']['roc_auc']:.3f} to "
-        f"{w05['tree']['roc_auc']:.3f} for the tree, but falls from {h05['logreg_demo']['roc_auc']:.3f} to {w05['logreg_demo']['roc_auc']:.3f} for "
+        f"{w05['tree']['roc_auc']:.3f} for the tree and from {h05['rf']['roc_auc']:.3f} to {w05['rf']['roc_auc']:.3f} for the forest, but falls from {h05['logreg_demo']['roc_auc']:.3f} to {w05['logreg_demo']['roc_auc']:.3f} for "
         f"the demographic-only model. The weights give more influence to households the sample under-represents, which are mostly poorer and "
         f"rural. That is exactly where the household features carry most of their information and where age, sex and area alone separate "
         f"children least. Statements about the national population should therefore quote the weighted figures. Hold-out ROC-AUCs are "
@@ -273,23 +291,33 @@ def main():
     bullets(doc, [
         "When a false alarm costs as much as a missed child (r = 1), the cheapest policy is to flag nobody. Neither model is sharp enough "
         "to beat the base rate on those terms. The cost framing exposes this honestly instead of hiding it behind an accuracy score.",
-        f"Once a missed child is weighted {ratio} times a wasted visit, the best cut-off drops sharply. Our recommendation is the decision tree at "
-        f"a cut-off of {rec['tree']:.2f}. On the held-out districts, for every 1,000 children screened it flags {tree_rec['flagged_per_1000']:.0f}, "
-        f"finds {tree_rec['caught_per_1000']:.0f} of the {tree_rec['caught_per_1000'] + tree_rec['missed_per_1000']:.0f} who are out of school and "
-        f"misses {tree_rec['missed_per_1000']:.0f} (recall {tree_rec['recall']:.2f}, precision {tree_rec['precision']:.2f}). This is the lowest "
-        f"hold-out cost of any policy examined. The same tree at the default 0.5 cut-off would find only {tree_05['caught_per_1000']:.0f} per 1,000.",
-        f"Logistic regression at a cut-off of {rec['logreg']:.2f} is a close second (recall {lr_rec['recall']:.2f}, precision {lr_rec['precision']:.2f}, "
-        f"{lr_rec['flagged_per_1000']:.0f} flagged per 1,000). It is the better choice wherever officials must be able to explain, child by child, "
-        "why someone was flagged, because its reasoning is a fixed list of weighted factors.",
-        f"At r = 10 both models flag more than half of all children in order to find {ct[('logreg',10)]['holdout_recall']:.0%}-"
-        f"{ct[('tree',10)]['holdout_recall']:.0%} of those out of school. Whether that is affordable is a budget decision for the programme; the "
+        f"Once a missed child is weighted {ratio} times a wasted visit, the best cut-off drops sharply. Ranked by hold-out cost per 1,000 at "
+        f"cut-offs chosen on training data, the models come out as: " + "; ".join(f"{NAMES[m]} {rank[m]:.0f}" for m in rank) + ". "
+        f"Our recommendation is therefore the {NAMES[best].lower()} at a cut-off of {rec[best]:.2f}. On the held-out districts, for every 1,000 "
+        f"children screened it flags {best_rec['flagged_per_1000']:.0f}, finds {best_rec['caught_per_1000']:.0f} of the "
+        f"{best_rec['caught_per_1000'] + best_rec['missed_per_1000']:.0f} who are out of school and misses {best_rec['missed_per_1000']:.0f} "
+        f"(recall {best_rec['recall']:.2f}, precision {best_rec['precision']:.2f}). The same model at the default 0.5 cut-off would find only "
+        f"{best_05['caught_per_1000']:.0f} per 1,000.",
+        (f"A note on the ranking. The {NAMES[top_auc].lower()} has the best ranking quality (highest hold-out ROC-AUC, {h05[top_auc]['roc_auc']:.3f}), "
+         f"yet the {NAMES[best].lower()} wins on cost because its training-chosen cut-off transfers to the new districts almost perfectly, whereas "
+         f"the {NAMES[top_auc].lower()}'s cut-off of {rec[top_auc]:.2f} sits a little below its hold-out optimum of "
+         f"{ct[(top_auc, ratio)]['holdout_oracle_threshold']:.2f} and so flags more children than it needs to. The gap between the two "
+         f"({rank[best]:.0f} versus {rank[top_auc]:.0f} per 1,000) is within the fold-to-fold variation seen in cross-validation, so the choice between "
+         "them should rest on stability and explainability rather than on this difference alone." if top_auc != best else
+         f"The {NAMES[best].lower()} also has the highest hold-out ROC-AUC, so ranking quality and cost agree on the recommendation."),
+        "The other two models at their own training-chosen cut-offs: " + "; ".join(
+            f"{NAMES[m].lower()} at {rec[m]:.2f} (recall {tc[(m, 'recommended')]['recall']:.2f}, precision {tc[(m, 'recommended')]['precision']:.2f}, "
+            f"{tc[(m, 'recommended')]['flagged_per_1000']:.0f} flagged per 1,000)" for m in others) + ". Logistic regression remains the better "
+        "choice wherever officials must be able to explain, child by child, why someone was flagged, because its reasoning is a fixed list of "
+        "weighted factors; the forest's advantage in ranking quality comes at the price of being harder to explain.",
+        f"At r = 10 the models flag more than half of all children in order to find "
+        f"{min(ct[(m,10)]['holdout_recall'] for m in MODELS):.0%}-{max(ct[(m,10)]['holdout_recall'] for m in MODELS):.0%} of those out of school. Whether that is affordable is a budget decision for the programme; the "
         "cost ratio simply makes the decision explicit.",
-        f"Honesty check. Had we chosen the cut-off on the hold-out itself, the logistic regression optimum would have been "
-        f"{ct[('logreg',ratio)]['holdout_oracle_threshold']:.2f} with a cost of {ct[('logreg',ratio)]['holdout_oracle_cost_per_1000']:.0f} per 1,000, against "
-        f"{ct[('logreg',ratio)]['holdout_cost_per_1000']:.0f} at the training-chosen {rec['logreg']:.2f}; for the tree the two coincide at {rec['tree']:.2f}. "
-        f"The flattery avoided is small here, about {(ct[('logreg',ratio)]['holdout_cost_per_1000']/ct[('logreg',ratio)]['holdout_oracle_cost_per_1000']-1):.1%} "
-        "of cost for logistic regression, but it is not zero, which is why every figure at the recommended cut-off in Tables 5-7 and Figures 5-6 "
-        "uses the training-chosen value.",
+        "Honesty check. Had we chosen each cut-off on the hold-out itself, the results would have been: " + "; ".join(
+            f"{NAMES[m].lower()} oracle {ct[(m, ratio)]['holdout_oracle_threshold']:.2f} costing {ct[(m, ratio)]['holdout_oracle_cost_per_1000']:.0f} per 1,000 "
+            f"versus {ct[(m, ratio)]['holdout_cost_per_1000']:.0f} at the training-chosen {rec[m]:.2f}" for m in MODELS) + ". The flattery avoided is "
+        f"at most {max(ct[(m, ratio)]['holdout_cost_per_1000'] / ct[(m, ratio)]['holdout_oracle_cost_per_1000'] - 1 for m in MODELS):.1%} of cost, small "
+        "but not zero, which is why every figure at the recommended cut-off in Tables 5-7 and Figures 5-6 uses the training-chosen value.",
     ])
 
     doc.add_heading("5.1 Which children does the model get wrong?", 2)
@@ -335,13 +363,17 @@ def main():
     o = pd.read_csv(T / "t15_logit_odds_ratios.csv")[["label", "odds_ratio", "or_ci_low", "or_ci_high", "p_value", "std_coef"]]
     o.columns = ["Factor", "Odds ratio", "95% CI low", "95% CI high", "p-value", "Standardised coefficient"]
     add_table(doc, o, caption="Table 8. Logistic regression odds ratios, estimated on the training districts")
-    g = pd.read_csv(T / "t17_tree_gini_importance.csv").merge(pd.read_csv(T / "t18_permutation_logreg.csv")[["feature", "auc_drop_mean"]], on="feature") \
-        .merge(pd.read_csv(T / "t19_permutation_tree.csv")[["feature", "auc_drop_mean"]], on="feature", suffixes=("_lr", "_tree"))
-    g = g[["label", "gini_importance", "auc_drop_mean_lr", "auc_drop_mean_tree"]]
-    g.columns = ["Factor", "Tree Gini importance", "Permutation ROC-AUC drop (logistic)", "Permutation ROC-AUC drop (tree)"]
-    add_table(doc, g, caption="Table 9. Tree Gini importance and hold-out permutation importance")
+    g = pd.read_csv(T / "t17_tree_gini_importance.csv")[["feature", "label", "gini_importance"]] \
+        .merge(pd.read_csv(T / "t17b_rf_gini_importance.csv")[["feature", "gini_importance"]].rename(columns={"gini_importance": "gini_rf"}), on="feature") \
+        .merge(pd.read_csv(T / "t18_permutation_logreg.csv")[["feature", "auc_drop_mean"]].rename(columns={"auc_drop_mean": "perm_lr"}), on="feature") \
+        .merge(pd.read_csv(T / "t19_permutation_tree.csv")[["feature", "auc_drop_mean"]].rename(columns={"auc_drop_mean": "perm_tree"}), on="feature") \
+        .merge(pd.read_csv(T / "t19b_permutation_rf.csv")[["feature", "auc_drop_mean"]].rename(columns={"auc_drop_mean": "perm_rf"}), on="feature")
+    g = g[["label", "gini_importance", "gini_rf", "perm_lr", "perm_tree", "perm_rf"]].sort_values("gini_rf", ascending=False)
+    g.columns = ["Factor", "Gini (tree)", "Gini (forest)", "Permutation drop (logistic)", "Permutation drop (tree)", "Permutation drop (forest)"]
+    add_table(doc, g, caption="Table 9. Gini importance for the tree and the forest, and hold-out permutation importance for all three models", font=8)
     add_fig(doc, "odds", "Figure 7. Odds ratios with 95% confidence intervals. Points to the right of 1 raise the odds of being out of school.", 5.6)
-    add_fig(doc, "importance", "Figure 8. Standardised coefficients, Gini importance and permutation importance side by side.")
+    add_fig(doc, "importance", "Figure 8. Logistic standardised coefficients, tree Gini importance and permutation importance side by side.")
+    add_fig(doc, "importance_rf", "Figure 8b. Random forest Gini and permutation importance.", 6.3)
     add_fig(doc, "h4", "Figure 9. Predicted probability of being out of school for boys and girls in rural and urban areas (H4).", 4.6)
 
     hyp = pd.DataFrame(R["hypotheses"])[["hypothesis", "feature", "H1_expectation", "odds_ratio", "or_ci_low", "or_ci_high", "p_value", "gini_rank", "H0_rejected_at_5pct"]]
@@ -352,11 +384,11 @@ def main():
         f"H1 Poverty (asset count). The odds ratio is {ors['assets_n']['odds_ratio']:.3f} per additional asset and its interval excludes 1, so the "
         f"direction is as hypothesised, but the effect per asset is small; the count ranks {hyp_gini['assets_n']:.0f}th in Gini importance. "
         f"Housing structure (odds ratio {ors['house']['odds_ratio']:.2f} per step from kachha to pacca) and digital access (odds ratio "
-        f"{ors['digital_n']['odds_ratio']:.2f} per service) are the dominant poverty signals in both models. The null is rejected, with the "
+        f"{ors['digital_n']['odds_ratio']:.2f} per service) are the dominant poverty signals in all three models. The null is rejected, with the "
         "qualification that the asset count is a weaker measure of poverty than housing.",
         f"H2 Legal identity (B-form). Registered children have an odds ratio of {ors['bform']['odds_ratio']:.3f}, which means unregistered children "
         f"have about {1/ors['bform']['odds_ratio']:.2f} times the odds of being out of school. The result is significant and consistent across all "
-        "three importance views. The null is rejected.",
+        "importance views and all three models. The null is rejected.",
         f"H3 Disability. Children with a functional difficulty have an odds ratio of {ors['any_disability']['odds_ratio']:.2f}, the largest single risk "
         "factor after living in Balochistan. The null is rejected.",
         f"H4 Gender by area. The interaction term has an odds ratio of {ors['female_x_urban']['odds_ratio']:.3f} with an interval excluding 1. Girls face "
@@ -399,8 +431,9 @@ def main():
         "The gender gap is rural. Girl-focused measures should be prioritised in rural areas, where the predicted penalty is almost three times "
         "the urban one.",
         "Balochistan needs a province-level response. Living there nearly doubles the odds even after household factors are accounted for.",
-        f"Set the operating cut-off deliberately, and choose it on training data. At a {ratio}:1 cost ratio the recommended policy flags about "
-        f"{tree_rec['flagged_rate']:.0%} of children and finds {tree_rec['recall']:.0%} of those out of school in districts the model has never seen. "
+        f"Set the operating cut-off deliberately, and choose it on training data. At a {ratio}:1 cost ratio the recommended policy "
+        f"({NAMES[best].lower()} at {rec[best]:.2f}) flags about {best_rec['flagged_rate']:.0%} of children and finds {best_rec['recall']:.0%} of those "
+        f"out of school in districts the model has never seen. "
         "The default cut-off of 0.5 is not a defensible choice for outreach.",
     ])
 
@@ -408,7 +441,7 @@ def main():
     doc.add_heading("8. Limitations and the plan for Milestone 04", 1)
     para(doc, "Current limitations.")
     bullets(doc, [
-        f"Modest discrimination (the ability to tell the two groups apart): hold-out ROC-AUC of {h05['logreg']['roc_auc']:.2f}-{h05['tree']['roc_auc']:.2f} "
+        f"Modest discrimination (the ability to tell the two groups apart): hold-out ROC-AUC of {min(h05[m]['roc_auc'] for m in MODELS):.2f}-{max(h05[m]['roc_auc'] for m in MODELS):.2f} "
         f"and a pseudo-R-squared of {R['pseudo_r2']:.2f}. This is a sign of underfitting (the model is too simple for the pattern). Thirteen household "
         "features cannot separate the harder cases, especially urban or better-off dropouts; the missing information is probably on the school "
         "side (distance, supply, cost) and in the child's history.",
@@ -431,8 +464,8 @@ def main():
         "disability, and by province, each with bootstrap confidence intervals. We will test whether group-specific cut-offs or reweighting "
         "close the urban and Punjab/Sindh recall gaps. Islamabad Capital Territory (807 children, 52 out of school) is too small for reliable "
         "group conclusions and will be reported but not acted on.",
-        "Stronger models under the same district-grouped cross-validation: random forests and gradient boosting (ensembles that combine many "
-        "trees and usually predict better than a single tree); calibration (checking that a predicted 30% really means about 30%); interaction "
+        "Stronger models under the same district-grouped cross-validation: gradient boosting (an ensemble that builds trees one after another, "
+        "each correcting the errors of the last, and usually the strongest tabular learner), building on the random forest already fitted here; calibration (checking that a predicted 30% really means about 30%); interaction "
         "terms suggested by the tree; and a cost-sensitive objective (training the model to minimise the weighted error cost directly rather "
         "than fixing it afterwards with a cut-off).",
         "An ethical evaluation covering the harms of mis-targeting (stigma from a false flag, exclusion from a missed child), the use of survey "
@@ -485,6 +518,7 @@ def main():
         ("Cross-sectional survey", "A one-time snapshot of many households, with no follow-up over time."),
         ("Association versus causal effect", "Two things occurring together versus proof that changing one changes the other."),
         ("Underfitting", "A model too simple to capture the pattern in the data."),
+        ("Ensemble / random forest / bagging", "A model made of many models; a forest averages many trees, each trained on a bootstrap re-sample (bagging) with random feature subsets."),
         ("Calibration", "Whether a predicted probability of 30% really corresponds to about 30% of such children being out of school."),
     ], columns=["Term", "Meaning"])
     add_table(doc, gl, font=8.5)

@@ -78,6 +78,13 @@ def main() -> dict:
     probas["tree"] = gs_tree.predict_proba(Xte)[:, 1]
     print(f"        best {gs_tree.best_params_}  CV AUC {gs_tree.best_score_:.4f}")
 
+    print("[tune] random forest ...")
+    gs_rf = tune(M.build_rf(), M.RF_GRID, Xtr, ytr, gtr)
+    save(cv_table(gs_rf), "t03b_cv_grid_rf")
+    fitted["rf"] = gs_rf.best_estimator_
+    probas["rf"] = gs_rf.predict_proba(Xte)[:, 1]
+    print(f"        best {gs_rf.best_params_}  CV AUC {gs_rf.best_score_:.4f}")
+
     # H5: demographic-only logistic model on identical folds
     print("[tune] logistic regression, demographic features only (H5) ...")
     Xtr_demo, Xte_demo = Xtr[C.DEMO_FEATURES], Xte[C.DEMO_FEATURES]
@@ -86,7 +93,7 @@ def main() -> dict:
     fitted["logreg_demo"] = gs_demo.best_estimator_
     probas["logreg_demo"] = gs_demo.predict_proba(Xte_demo)[:, 1]
 
-    for key, gs in (("logreg", gs_lr), ("tree", gs_tree), ("logreg_demo", gs_demo)):
+    for key, gs in (("logreg", gs_lr), ("tree", gs_tree), ("rf", gs_rf), ("logreg_demo", gs_demo)):
         row = {"model": key, "best_params": json.dumps({k.replace("clf__", ""): v for k, v in gs.best_params_.items()})}
         for m in ("roc_auc", "average_precision", "recall", "precision", "f1", "accuracy", "balanced_accuracy"):
             f = fold_scores(gs, m)
@@ -114,13 +121,14 @@ def main() -> dict:
     print(f"        H5 hold-out AUC gain {R['h5']['holdout_bootstrap']['diff_point']:+.4f} "
           f"[{R['h5']['holdout_bootstrap']['ci_low']:+.4f}, {R['h5']['holdout_bootstrap']['ci_high']:+.4f}] (district bootstrap)")
     R["best_params"] = {"logreg": {k.replace("clf__", ""): v for k, v in gs_lr.best_params_.items()},
-                        "tree": {k.replace("clf__", ""): v for k, v in gs_tree.best_params_.items()}}
+                        "tree": {k.replace("clf__", ""): v for k, v in gs_tree.best_params_.items()},
+                        "rf": {k.replace("clf__", ""): v for k, v in gs_rf.best_params_.items()}}
     tree_clf = fitted["tree"].named_steps["clf"]
     R["tree_shape"] = {"depth": int(tree_clf.get_depth()), "leaves": int(tree_clf.get_n_leaves())}
 
     # ------------------------------------------------------------------ 3. hold-out metrics @ 0.5
     rows = []
-    for key in ("naive", "logreg_demo", "logreg", "tree"):
+    for key in ("naive", "logreg_demo", *M.MODELS):
         m = ev.metrics(yte, probas[key], 0.5)
         rows.append({"model": key, "model_name": M.MODEL_NAMES[key], "weighted": False, **m})
         mw = ev.metrics(yte, probas[key], 0.5, w=wte)
@@ -129,7 +137,7 @@ def main() -> dict:
     save(holdout, "t07_holdout_metrics_threshold_0.5")
     R["holdout_05"] = holdout[~holdout.weighted].set_index("model").to_dict(orient="index")
     R["holdout_05_weighted"] = holdout[holdout.weighted].set_index("model").to_dict(orient="index")
-    assert R["holdout_05"]["logreg"]["roc_auc"] > 0.5 and R["holdout_05"]["tree"]["roc_auc"] > 0.5
+    assert all(R["holdout_05"][k]["roc_auc"] > 0.5 for k in M.MODELS)
     assert abs(R["holdout_05"]["naive"]["accuracy"] - (1 - yte.mean())) < 1e-9
 
     # ------------------------------------------------------------------ 4. threshold selection (training OOF) + asymmetric cost
@@ -138,10 +146,10 @@ def main() -> dict:
     # the cost curve is swept on those, and only the chosen threshold is then applied once to the hold-out.
     print("[threshold] out-of-fold training predictions for threshold selection ...")
     oof = {}
-    for key in ("logreg", "tree"):
+    for key in M.MODELS:
         oof[key] = cross_val_predict(clone(fitted[key]), Xtr, ytr, groups=gtr, cv=make_inner_cv(), method="predict_proba", n_jobs=-1)[:, 1]
     sweeps_oof, sweeps_ho, best_t, cms_05, cms_rec = {}, {}, [], {}, {}
-    for key in ("logreg", "tree"):
+    for key in M.MODELS:
         sw = ev.threshold_sweep(ytr, oof[key]); sw.insert(0, "model", key); sw.insert(1, "data", "train_oof"); sweeps_oof[key] = sw
         sh = ev.threshold_sweep(yte, probas[key]); sh.insert(0, "model", key); sh.insert(1, "data", "holdout"); sweeps_ho[key] = sh
         bt = ev.best_thresholds(sw); bt.insert(0, "model", key)
@@ -164,7 +172,7 @@ def main() -> dict:
     R["cost_thresholds"] = best_t.to_dict(orient="records")
 
     rec_thr = {}
-    for key in ("logreg", "tree"):
+    for key in M.MODELS:
         thr = float(best_t[(best_t.model == key) & (best_t.cost_ratio_fn_to_fp == C.RECOMMENDED_COST_RATIO)].threshold.item())
         rec_thr[key] = thr
         cms_05[key] = {**ev.confusion(yte, (probas[key] >= 0.5).astype(int)), "threshold": 0.5}
@@ -173,9 +181,13 @@ def main() -> dict:
     R["recommended_threshold"] = rec_thr
     R["recommended_cost_ratio"] = C.RECOMMENDED_COST_RATIO
     R["threshold_selection"] = "cost-minimising threshold chosen on district-grouped out-of-fold training predictions; hold-out touched once"
+    # recommended model = lowest hold-out expected cost at the recommended ratio, among thresholds chosen on training OOF
+    at_ratio = best_t[best_t.cost_ratio_fn_to_fp == C.RECOMMENDED_COST_RATIO].set_index("model")
+    R["recommended_model"] = str(at_ratio["holdout_cost_per_1000"].idxmin())
+    R["model_rank_by_holdout_cost"] = at_ratio["holdout_cost_per_1000"].sort_values().round(2).to_dict()
 
     comp_rows = []
-    for key in ("naive", "logreg", "tree"):
+    for key in ("naive", *M.MODELS):
         for label, cm in (("0.50 (default)", cms_05[key]), ("recommended", cms_rec.get(key))):
             if cm is None:
                 continue
@@ -215,7 +227,7 @@ def main() -> dict:
         "bform": df_te["bform"], "province": province_of(df_te),
     }
     sub_rows = []
-    for key in ("logreg", "tree"):
+    for key in M.MODELS:
         s = ev.subgroup_metrics(df_te, yte, probas[key], rec_thr[key], groupings)
         s.insert(0, "model", key)
         sub_rows.append(s)
@@ -223,6 +235,7 @@ def main() -> dict:
     save(sub, "t14_subgroup_metrics_recommended_threshold")
     R["subgroups_logreg"] = sub[sub.model == "logreg"].drop(columns="model").to_dict(orient="records")
     R["subgroups_tree"] = sub[sub.model == "tree"].drop(columns="model").to_dict(orient="records")
+    R["subgroups_rf"] = sub[sub.model == "rf"].drop(columns="model").to_dict(orient="records")
     R["subgroup_counts_file"] = load_subgroup_counts().to_dict(orient="records")
 
     # ------------------------------------------------------------------ 6. feature importance
@@ -235,7 +248,10 @@ def main() -> dict:
     save(gini, "t17_tree_gini_importance")
     perm_lr = imp.permutation(fitted["logreg"], Xte, yte)
     perm_tree = imp.permutation(fitted["tree"], Xte, yte)
-    save(perm_lr, "t18_permutation_logreg"); save(perm_tree, "t19_permutation_tree")
+    gini_rf = imp.tree_gini(fitted["rf"])
+    save(gini_rf, "t17b_rf_gini_importance")
+    perm_rf = imp.permutation(fitted["rf"], Xte, yte)
+    save(perm_lr, "t18_permutation_logreg"); save(perm_tree, "t19_permutation_tree"); save(perm_rf, "t19b_permutation_rf")
     cells = imp.gender_area_cells(fitted["logreg"], Xtr)
     save(cells, "t20_h4_gender_area_cells")
     R["odds_ratios"] = ors.round(5).to_dict(orient="records")
@@ -243,12 +259,14 @@ def main() -> dict:
     R["gini"] = gini.round(5).to_dict(orient="records")
     R["perm_logreg"] = perm_lr.round(5).to_dict(orient="records")
     R["perm_tree"] = perm_tree.round(5).to_dict(orient="records")
+    R["gini_rf"] = gini_rf.round(5).to_dict(orient="records")
+    R["perm_rf"] = perm_rf.round(5).to_dict(orient="records")
     R["h4_cells"] = cells.to_dict(orient="records")
     R["h4_gaps"] = {"rural_gender_gap": cells.attrs["rural_gender_gap"], "urban_gender_gap": cells.attrs["urban_gender_gap"]}
     R["pseudo_r2"] = float(ors["pseudo_r2"].iloc[0])
 
     # hypothesis evidence table
-    o = ors.set_index("feature"); g = gini.set_index("feature"); pl = perm_lr.set_index("feature")
+    o = ors.set_index("feature"); g = gini.set_index("feature"); pl = perm_lr.set_index("feature"); grf = gini_rf.set_index("feature")
     hyp_rows = []
     for h, f in C.HYPOTHESIS_FEATURES.items():
         expect = {"assets_n": "OR < 1", "bform": "OR < 1", "any_disability": "OR > 1", "female_x_urban": "OR != 1"}[f]
@@ -257,10 +275,11 @@ def main() -> dict:
         hyp_rows.append({"hypothesis": h, "feature": f, "H1_expectation": expect, "odds_ratio": orv,
                          "or_ci_low": o.loc[f, "or_ci_low"], "or_ci_high": o.loc[f, "or_ci_high"], "p_value": o.loc[f, "p_value"],
                          "std_coef_rank": int(ors.index[ors.feature == f][0] + 1), "gini_rank": int(gini.index[gini.feature == f][0] + 1),
+                         "rf_gini_rank": int(gini_rf.index[gini_rf.feature == f][0] + 1),
                          "perm_auc_drop_logreg": pl.loc[f, "auc_drop_mean"], "H0_rejected_at_5pct": bool(supported)})
     hyp_rows.append({"hypothesis": "H5 Feature value", "feature": "13 vs 3 features", "H1_expectation": "AUC gain > 0",
                      "odds_ratio": np.nan, "or_ci_low": np.nan, "or_ci_high": np.nan, "p_value": R["h5"]["p_value"],
-                     "std_coef_rank": np.nan, "gini_rank": np.nan, "perm_auc_drop_logreg": R["h5"]["gain_mean"],
+                     "std_coef_rank": np.nan, "gini_rank": np.nan, "rf_gini_rank": np.nan, "perm_auc_drop_logreg": R["h5"]["gain_mean"],
                      "H0_rejected_at_5pct": bool(R["h5"]["p_value"] < 0.05 and R["h5"]["gain_mean"] > 0)})
     hyp = pd.DataFrame(hyp_rows)
     save(hyp, "t21_hypothesis_evidence")
@@ -270,11 +289,12 @@ def main() -> dict:
     print("[plots] ...")
     names = M.MODEL_NAMES
     figs = {
-        "roc_pr": plots.roc_pr_curves(yte, {k: probas[k] for k in ("logreg_demo", "logreg", "tree")}, names, float(yte.mean())),
-        "cm_05": plots.confusion_heatmaps({k: cms_05[k] for k in ("naive", "logreg", "tree")}, names, "_default"),
+        "roc_pr": plots.roc_pr_curves(yte, {k: probas[k] for k in ("logreg_demo", *M.MODELS)}, names, float(yte.mean())),
+        "cm_05": plots.confusion_heatmaps({k: cms_05[k] for k in ("naive", *M.MODELS)}, names, "_default"),
         "cm_rec": plots.confusion_heatmaps(cms_rec, names, "_recommended"),
         "threshold": plots.threshold_curves(sweeps_oof, sweeps_ho, rec_thr, names, C.RECOMMENDED_COST_RATIO),
         "importance": plots.importance_bars(sk_coef, gini, perm_lr, perm_tree),
+        "importance_rf": plots.rf_importance_bars(gini_rf, perm_rf),
         "odds": plots.odds_ratio_forest(ors),
         "h5": plots.h5_auc_folds(auc_demo, auc_full),
         "h4": plots.gender_area_plot(cells),

@@ -16,8 +16,8 @@ md("""
 and demographic / geographic characteristics - and does the model work equally well for girls, children with
 disabilities and rural children? (SDG 4.1 access, SDG 4.5 disparities.)
 
-**What this notebook does.** It implements the Milestone 3 brief end to end: a naive benchmark plus two baseline
-learners (logistic regression, decision tree), a leakage-free district-grouped stratified cross-validation framework
+**What this notebook does.** It implements the Milestone 3 brief end to end: a naive benchmark plus three baseline
+learners (logistic regression, decision tree, random forest), a leakage-free district-grouped stratified cross-validation framework
 with hyperparameter tuning, the full metric set with confusion matrices, an asymmetric error-cost analysis with
 threshold shifting, feature-importance drivers read against the five Milestone 2 hypotheses, and the roadmap for
 Milestone 4. All modelling code lives in `src/` and is imported here so the notebook stays readable; `src/run_all.py`
@@ -102,6 +102,7 @@ md("""
 | **Majority-class benchmark** (`DummyClassifier(most_frequent)`) | Fixes the floor: predicts "enrolled" for everyone. Shows how misleading raw accuracy is at 13% prevalence. |
 | **Logistic regression** (`StandardScaler` -> L2-penalised LR) | Our hypotheses H1-H4 are statements about the *direction and size* of individual effects (assets, B-form, disability, gender x area). Logistic coefficients give odds ratios with confidence intervals that answer them directly. Features are binary / ordinal, so a linear-in-log-odds model is a natural first fit. Tuned: regularisation strength `C`, class weighting. |
 | **Decision tree** (CART, Gini) | Captures non-linear thresholds (e.g. asset counts) and interactions (H4) without hand-specification, is fully interpretable through its splits and Gini importance, and is cheap on 161k rows. Tuned: `max_depth`, `min_samples_leaf`, class weighting. |
+| **Random forest** (200 bagged trees, `sqrt` features per split) | A single tree is unstable and stops short of the best ranking; averaging many de-correlated trees (bootstrap re-samples + random feature subsets) fixes both while keeping Gini/permutation importance. A distinct algorithm from the single tree and the bridge to Milestone 4's stronger models. Tuned: `max_depth`, `min_samples_leaf`, class weighting. |
 
 Both learners are tuned with `GridSearchCV` on the district-grouped inner folds, refitting on ROC-AUC
 (threshold-free, imbalance-robust); recall, precision, F1, accuracy and PR-AUC are recorded per fold as well.
@@ -124,6 +125,13 @@ print("Decision tree - best:", gs_tree.best_params_, f"CV ROC-AUC = {gs_tree.bes
 display(cv_table(gs_tree)[["max_depth", "min_samples_leaf", "class_weight", "mean_test_roc_auc", "std_test_roc_auc", "mean_test_recall", "mean_test_f1"]].head(12))
 """)
 
+code("""
+gs_rf = tune(M.build_rf(), M.RF_GRID, Xtr, ytr, gtr)     # ~3-4 minutes: 18 settings x 5 folds x 200 trees
+probas["rf"] = gs_rf.predict_proba(Xte)[:, 1]
+print("Random forest - best:", gs_rf.best_params_, f"CV ROC-AUC = {gs_rf.best_score_:.4f}")
+display(cv_table(gs_rf)[["max_depth", "min_samples_leaf", "class_weight", "mean_test_roc_auc", "std_test_roc_auc", "mean_test_recall", "mean_test_f1"]].head(10))
+""")
+
 md("""
 **Interpretation of the tuning.** (In the grid tables, `recall`, `f1` and `accuracy` are measured at the default 0.5
 threshold; ROC-AUC and average precision are threshold-free.) For logistic regression the strongest regularisation
@@ -132,8 +140,9 @@ well-determined with 129k rows), while balancing matters for recall at the defau
 depth (10) with a large minimum leaf (200 children) is best - deeper, unconstrained trees over-fit district
 idiosyncrasies and lose AUC on unseen districts. Because the refit criterion is ROC-AUC, the selected tree carries *no*
 class weighting, and at the default 0.5 cut-off it flags almost nobody (recall ~0.07 in CV, ~0.04 on hold-out): almost no
-leaf reaches a 50% out-of-school share. That is not a defect of the tree - it is why the operating threshold is set
-separately, on training data only, in section 6. Fold-to-fold standard deviations of ~0.05 AUC show how much
+leaf reaches a 50% out-of-school share. The same holds for the random forest (best: depth 12, leaf >= 20, no class
+weights, CV AUC 0.755 - the highest of the three; default-threshold recall ~0.02-0.04). That is not a defect of the
+tree models - it is why the operating threshold is set separately, on training data only, in section 6. Fold-to-fold standard deviations of ~0.05 AUC show how much
 performance varies between groups of districts, which is exactly the variance a random split would have hidden.
 
 ## 4. Hypothesis H5 - do poverty, B-form, disability and the controls add predictive value?
@@ -175,24 +184,25 @@ reported as a robustness check; the unweighted numbers are the primary ones.
 
 code("""
 rows = []
-for key in ("naive", "logreg_demo", "logreg", "tree"):
+for key in ("naive", "logreg_demo", *M.MODELS):
     rows.append({"model": M.MODEL_NAMES[key], "weighted": "no", **ev.metrics(yte, probas[key], 0.5)})
     rows.append({"model": M.MODEL_NAMES[key], "weighted": "yes", **ev.metrics(yte, probas[key], 0.5, w=wte)})
 holdout = pd.DataFrame(rows)
 cols = ["model", "weighted", "accuracy", "precision", "recall", "specificity", "f1", "roc_auc", "pr_auc", "flagged_rate"]
 display(holdout[cols])
-display(Image(plots.roc_pr_curves(yte, {k: probas[k] for k in ("logreg_demo", "logreg", "tree")}, M.MODEL_NAMES, float(yte.mean()))))
+display(Image(plots.roc_pr_curves(yte, {k: probas[k] for k in ("logreg_demo", *M.MODELS)}, M.MODEL_NAMES, float(yte.mean()))))
 """)
 
 md("""
 **Interpretation.** The majority-class benchmark reaches 87.5% accuracy with zero recall - every out-of-school
 child is missed. The balanced logistic regression trades accuracy (62%) for recall (63%) at the default cut-off. The
-tree has the better ranking quality (ROC-AUC 0.71, PR-AUC 0.24) but, because it was tuned without class weights, its
-default-threshold recall is only ~4%: almost no leaf reaches a 50% out-of-school share. This is the clearest
+tree has better ranking quality (ROC-AUC 0.71, PR-AUC 0.24) and the random forest the best (ROC-AUC 0.72, PR-AUC
+0.25), but both were tuned without class weights, so their default-threshold recall is only ~4%: almost no leaf reaches
+a 50% out-of-school share. This is the clearest
 demonstration that **the threshold, not the learner, decides who gets flagged** - which is the subject of the next
 section. Applying the ASER sampling weights moves the metrics in *different directions for different models*: ROC-AUC
-rises from 0.674 to 0.713 for the full logistic model and from 0.711 to 0.749 for the tree, but falls from 0.547 to
-0.512 for the demographic-only model. The weights up-weight households the sample under-represents - predominantly
+rises from 0.674 to 0.713 for the full logistic model, from 0.711 to 0.749 for the tree and from 0.725 to 0.755 for the
+forest, but falls from 0.547 to 0.512 for the demographic-only model. The weights up-weight households the sample under-represents - predominantly
 poorer, rural ones - where the household features carry most of their signal and where age, sex and area alone
 separate least. Population-level statements should quote the weighted figures. Hold-out AUCs are ~0.03-0.06 below the
 CV means: the held-out districts are a harder group, within the fold-to-fold spread seen in CV.
@@ -218,16 +228,16 @@ been, so the size of the flattery that selection-on-test would have introduced i
 """)
 
 code("""
-cms_05 = {k: {**ev.confusion(yte, (probas[k] >= 0.5).astype(int)), "threshold": 0.5} for k in ("naive", "logreg", "tree")}
-for k in ("naive", "logreg", "tree"):
+cms_05 = {k: {**ev.confusion(yte, (probas[k] >= 0.5).astype(int)), "threshold": 0.5} for k in ("naive", *M.MODELS)}
+for k in ("naive", *M.MODELS):
     print(M.MODEL_NAMES[k], "@ 0.50"); display(ev.confusion_table(cms_05[k]))
 display(Image(plots.confusion_heatmaps(cms_05, M.MODEL_NAMES, "_default")))
 """)
 
 code("""
-fitted = {"logreg": gs_lr.best_estimator_, "tree": gs_tree.best_estimator_}
+fitted = {"logreg": gs_lr.best_estimator_, "tree": gs_tree.best_estimator_, "rf": gs_rf.best_estimator_}
 oof, sweeps_oof, sweeps_ho, best = {}, {}, {}, []
-for k in ("logreg", "tree"):
+for k in M.MODELS:
     oof[k] = cross_val_predict(clone(fitted[k]), Xtr, ytr, groups=gtr, cv=make_inner_cv(), method="predict_proba", n_jobs=-1)[:, 1]
     sweeps_oof[k] = ev.threshold_sweep(ytr, oof[k])          # selection: training out-of-fold
     sweeps_ho[k] = ev.threshold_sweep(yte, probas[k])        # reported only
@@ -242,21 +252,23 @@ for k in ("logreg", "tree"):
     best.append(b)
 best = pd.concat(best, ignore_index=True).rename(columns={"recall": "oof_recall", "precision": "oof_precision", "cost_per_1000": "oof_cost"})
 display(best[["model", "cost_ratio_fn_to_fp", "threshold", "oof_recall", "oof_precision", "oof_cost", "holdout_recall", "holdout_precision", "holdout_cost", "holdout_oracle_thr", "holdout_oracle_cost"]])
-rec_thr = {k: float(best[(best.model == k) & (best.cost_ratio_fn_to_fp == C.RECOMMENDED_COST_RATIO)].threshold.item()) for k in ("logreg", "tree")}
+rec_thr = {k: float(best[(best.model == k) & (best.cost_ratio_fn_to_fp == C.RECOMMENDED_COST_RATIO)].threshold.item()) for k in M.MODELS}
 print("thresholds chosen on training OOF (r = 5):", rec_thr)
+r5 = best[best.cost_ratio_fn_to_fp == C.RECOMMENDED_COST_RATIO].set_index("model")["holdout_cost"].sort_values()
+print("hold-out cost per 1,000 at those thresholds (lower is better):", r5.round(1).to_dict())
 display(Image(plots.threshold_curves(sweeps_oof, sweeps_ho, rec_thr, M.MODEL_NAMES, C.RECOMMENDED_COST_RATIO)))
 """)
 
 code("""
 cms_rec = {k: {**ev.confusion(yte, (probas[k] >= t).astype(int)), "threshold": t} for k, t in rec_thr.items()}
 rows = []
-for k in ("naive", "logreg", "tree"):
+for k in ("naive", *M.MODELS):
     for lab, cm in (("0.50 default", cms_05[k]), ("recommended", cms_rec.get(k))):
         if cm is None: continue
         rows.append({"model": k, "threshold": lab, "t": cm["threshold"], **ev.metrics_from_counts(cm), **ev.per_1000(cm),
                      "cost/1000 (r=5)": ev.expected_cost(cm, 5)})
 display(pd.DataFrame(rows)[["model", "threshold", "t", "recall", "precision", "specificity", "f1", "flagged_per_1000", "caught_per_1000", "missed_per_1000", "false_alarms_per_1000", "cost/1000 (r=5)"]])
-for k in ("logreg", "tree"):
+for k in M.MODELS:
     print(M.MODEL_NAMES[k], f"@ {rec_thr[k]:.2f}"); display(ev.confusion_table(cms_rec[k]))
 display(Image(plots.confusion_heatmaps(cms_rec, M.MODEL_NAMES, "_recommended")))
 """)
@@ -267,16 +279,21 @@ md("""
   the base rate when a false alarm costs as much as a missed child. This is the honest baseline the cost framing
   exposes.
 - Once a missed child is weighted 3-5x a wasted visit, the optimum moves to a low threshold that flags roughly a
-  third of all children and catches 55-60% of those out of school on unseen districts. At r = 10 the models flag over
-  half of all children to catch 75-83%.
+  third to 40% of all children and catches 55-70% of those out of school on unseen districts. At r = 10 the models flag
+  over half of all children to catch 75-85%.
+- **Ranking by hold-out cost at training-chosen thresholds (r = 5):** decision tree ~487 per 1,000, random forest ~496,
+  logistic regression ~552.
 - **Recommendation for deployment (r = 5).** Decision tree at threshold 0.16 (chosen on training OOF): per 1,000
   children screened on the hold-out it flags ~328, catches ~78 of the ~125 out-of-school children and misses ~47, at the
-  lowest hold-out expected cost of the three policies. The default 0.5 cut-off on the same tree would catch only ~5 per
-  1,000 - unusable for outreach. Logistic regression at 0.54 is a close second (recall ~0.57, precision ~0.20) and is
-  preferable where officials need to explain *why* a child was flagged.
-- **Honesty check.** Had the threshold been picked on the hold-out itself, the logistic optimum would have been 0.57
-  (cost ~545 per 1,000 vs ~552 at the training-selected 0.54); for the tree the two coincide at 0.16. The flattery from
-  selecting on the test set would have been small here (~1% of cost) but not zero - which is why every number at the
+  lowest hold-out expected cost. The default 0.5 cut-off on the same tree would catch only ~5 per 1,000 - unusable for
+  outreach. The random forest at 0.13 catches more (recall ~0.71, ~89 per 1,000) but flags ~403 per 1,000 to do it;
+  it has the best ranking quality (highest AUC) yet its training-chosen threshold sits a little below its hold-out
+  optimum (0.18), so on the honest comparison the single tree edges it by ~2% of cost - a gap within the fold-to-fold
+  noise, so stability and explainability should decide between them. Logistic regression at 0.54 (recall ~0.57,
+  precision ~0.20) is preferable where officials need to explain *why* a child was flagged.
+- **Honesty check.** Had the thresholds been picked on the hold-out itself: logistic optimum 0.57 (cost ~545 vs ~552 at
+  the training-selected 0.54); tree 0.16 either way; forest 0.18 (cost ~484 vs ~496 at 0.13). The flattery from
+  selecting on the test set would have been at most ~2.6% of cost - small but not zero, which is why every number at the
   recommended threshold below uses the training-selected value.
 - Which error is "better" to make depends on budget: a programme that can afford to visit a third of households
   should accept the false positives; one that cannot should raise the threshold and accept more missed children,
@@ -319,8 +336,8 @@ positives in the whole dataset it is too small for any reliable subgroup conclus
 ## 8. Feature importance and the five hypotheses
 
 Three complementary views: odds ratios with 95% confidence intervals from an unpenalised logistic fit on the training
-districts (inference), standardised coefficients from the tuned sklearn pipeline, Gini importance from the tuned tree,
-and permutation importance (drop in hold-out ROC-AUC when a feature is shuffled) for both learners.
+districts (inference), standardised coefficients from the tuned sklearn pipeline, Gini importance from the tuned tree
+and forest, and permutation importance (drop in hold-out ROC-AUC when a feature is shuffled) for all three learners.
 """)
 
 code("""
@@ -335,13 +352,18 @@ sk_coef = imp.sklearn_logreg_coefs(gs_lr.best_estimator_)
 gini = imp.tree_gini(gs_tree.best_estimator_)
 perm_lr = imp.permutation(gs_lr.best_estimator_, Xte, yte)
 perm_tree = imp.permutation(gs_tree.best_estimator_, Xte, yte)
+gini_rf = imp.tree_gini(gs_rf.best_estimator_)
+perm_rf = imp.permutation(gs_rf.best_estimator_, Xte, yte)
 rank = pd.DataFrame({"feature": C.FEATURES})
 rank["LR |std coef| rank"] = rank.feature.map({f: i + 1 for i, f in enumerate(sk_coef.feature)})
 rank["Tree Gini rank"] = rank.feature.map({f: i + 1 for i, f in enumerate(gini.feature)})
 rank["LR permutation rank"] = rank.feature.map({f: i + 1 for i, f in enumerate(perm_lr.feature)})
 rank["Tree permutation rank"] = rank.feature.map({f: i + 1 for i, f in enumerate(perm_tree.feature)})
-display(rank.sort_values("Tree Gini rank"))
+rank["Forest Gini rank"] = rank.feature.map({f: i + 1 for i, f in enumerate(gini_rf.feature)})
+rank["Forest permutation rank"] = rank.feature.map({f: i + 1 for i, f in enumerate(perm_rf.feature)})
+display(rank.sort_values("Forest Gini rank"))
 display(Image(plots.importance_bars(sk_coef, gini, perm_lr, perm_tree)))
+display(Image(plots.rf_importance_bars(gini_rf, perm_rf)))
 display(Image(plots.tree_top_levels(gs_tree.best_estimator_, C.FEATURES)))
 """)
 
@@ -357,7 +379,7 @@ md("""
 
 | Hypothesis | Variable | Evidence | Verdict |
 |---|---|---|---|
-| **H1 Poverty** - higher asset count lowers the odds | `assets_n` | OR ~ 0.96 per additional asset (95% CI excludes 1); 4th in Gini importance. Direction as hypothesised, but the effect per asset is small - **housing quality** (`house`, OR ~ 0.56 per step kachha -> pacca) and **digital access** (`digital_n`, OR ~ 0.82 per service) are the dominant poverty signals in both learners. | H0 rejected; poverty matters, but the asset *count* is a weaker proxy than housing. |
+| **H1 Poverty** - higher asset count lowers the odds | `assets_n` | OR ~ 0.96 per additional asset (95% CI excludes 1); 4th in Gini importance. Direction as hypothesised, but the effect per asset is small - **housing quality** (`house`, OR ~ 0.56 per step kachha -> pacca) and **digital access** (`digital_n`, OR ~ 0.82 per service) are the dominant poverty signals in all three learners (the forest ranks housing, digital use and assets 1-2-3). | H0 rejected; poverty matters, but the asset *count* is a weaker proxy than housing. |
 | **H2 Legal identity** - unregistered children have higher odds | `bform` | OR ~ 0.75 for registered children (equivalently 1.33x higher odds without a B-form), highly significant; consistent across LR, Gini and permutation. | H0 rejected. |
 | **H3 Disability** - children with a disability have higher odds | `any_disability` | OR ~ 1.88, the largest single risk factor after Balochistan residence; 4th by standardised coefficient. | H0 rejected. |
 | **H4 Gender x area** - the gender gap differs by area | `female_x_urban` | Interaction OR ~ 0.77 (CI excludes 1). Girls face higher odds everywhere, but the predicted gap is ~8.8 pp in rural areas versus ~3.3 pp in urban areas: the gender penalty is a *rural* phenomenon. The tree barely uses the interaction term (it recreates it via sequential splits). | H0 rejected. |
@@ -402,7 +424,7 @@ effect would have to be established - e.g. through a piloted or staggered roll-o
 ## 10. Limitations and roadmap for Milestone 04
 
 **Current limitations.**
-- *Underfitting / modest discrimination.* Hold-out AUC 0.67-0.71 and pseudo-R2 ~ 0.12: 13 household features cannot
+- *Underfitting / modest discrimination.* Hold-out AUC 0.67-0.72 and pseudo-R2 ~ 0.12: 13 household features cannot
   separate the harder cases (urban or better-off dropouts). The missing signal is likely school-side (distance, supply,
   cost) and child history.
 - *Class imbalance.* Handled with class weights and threshold tuning, not resampling; precision stays ~0.2 at useful
@@ -422,8 +444,9 @@ effect would have to be established - e.g. through a piloted or staggered roll-o
    boys, rural vs urban, with vs without disability, and province, with bootstrap confidence intervals; test whether
    per-group thresholds or reweighting close the urban and Punjab/Sindh recall gaps. Islamabad Capital Territory
    (n = 807, 52 positives) is flagged as too small for reliable group conclusions and will be reported but not acted on.
-2. *Advanced modelling*: gradient boosting / random forest with the same grouped CV; calibrated probabilities; interaction
-   terms suggested by the tree; a cost-sensitive objective aligned with the FN:FP ratio.
+2. *Advanced modelling*: gradient boosting with the same grouped CV, building on the random forest fitted here; calibrated
+   probabilities (the forest's threshold transferred less well than the tree's, a calibration symptom); interaction terms
+   suggested by the tree; a cost-sensitive objective aligned with the FN:FP ratio.
 3. *Ethical evaluation*: harms of mis-targeting (stigma from false flags, exclusion from missed children), use of survey
    weights for population-level claims, and a deployment note on who sets the cost ratio.
 

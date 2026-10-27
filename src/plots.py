@@ -13,7 +13,7 @@ from sklearn.tree import plot_tree
 from config import FIGURES_DIR, LABELS
 
 sns.set_theme(style="whitegrid", context="talk", font_scale=0.8)
-PALETTE = {"naive": "#7f7f7f", "logreg": "#1f77b4", "tree": "#d62728", "logreg_demo": "#9467bd"}
+PALETTE = {"naive": "#7f7f7f", "logreg": "#1f77b4", "tree": "#d62728", "rf": "#2ca02c", "logreg_demo": "#9467bd"}
 
 
 def _save(fig, name: str) -> str:
@@ -154,3 +154,14 @@ def tree_top_levels(pipe, features) -> str:
               rounded=True, fontsize=8, ax=ax)
     ax.set_title(f"Tuned decision tree - first three levels (full depth = {clf.get_depth()}, leaves = {clf.get_n_leaves()})")
     return _save(fig, "fig9_tree_top_levels")
+
+
+def rf_importance_bars(gini_rf: pd.DataFrame, perm_rf: pd.DataFrame) -> str:
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5.2))
+    d = gini_rf.sort_values("gini_importance")
+    axes[0].barh(d.label, d.gini_importance, color="#2ca02c")
+    axes[0].set(title="Random forest: Gini importance (averaged over 200 trees)", xlabel="Share of impurity reduction")
+    d = perm_rf.sort_values("auc_drop_mean")
+    axes[1].barh(d.label, d.auc_drop_mean, xerr=d.auc_drop_std, color="#2ca02c", ecolor="k", capsize=3)
+    axes[1].set(title="Random forest: permutation importance", xlabel="Drop in hold-out ROC-AUC when feature is shuffled")
+    return _save(fig, "fig10_rf_importance")
